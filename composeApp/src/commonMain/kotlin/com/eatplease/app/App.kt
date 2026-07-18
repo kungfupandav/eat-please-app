@@ -4,47 +4,60 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entry
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import com.eatplease.app.di.AppGraph
 import com.eatplease.app.di.Di
 import com.eatplease.app.ui.HomeScreen
 import com.eatplease.app.ui.LogScreen
 import com.eatplease.app.ui.SessionDetailScreen
+import kotlinx.serialization.Serializable
 
-private sealed interface Screen {
-    data object Home : Screen
-    data object Log : Screen
-    data class SessionDetail(val sessionId: Long) : Screen
-}
+@Serializable
+data object HomeKey : NavKey
 
-/** Root composable shared by the Android and iOS apps. */
+@Serializable
+data object LogKey : NavKey
+
+@Serializable
+data class SessionDetailKey(val sessionId: Long) : NavKey
+
+/** Root composable shared by the Android and iOS apps; Navigation 3 back stack. */
 @Composable
 fun App(graph: AppGraph = Di.graph) {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            var screen by remember { mutableStateOf<Screen>(Screen.Home) }
-            when (val current = screen) {
-                is Screen.Home -> HomeScreen(
-                    graph = graph,
-                    onOpenLog = { screen = Screen.Log },
-                )
-
-                is Screen.Log -> LogScreen(
-                    graph = graph,
-                    onBack = { screen = Screen.Home },
-                    onOpenSession = { screen = Screen.SessionDetail(it) },
-                )
-
-                is Screen.SessionDetail -> SessionDetailScreen(
-                    graph = graph,
-                    sessionId = current.sessionId,
-                    onBack = { screen = Screen.Log },
-                )
-            }
+            val backStack = rememberNavBackStack(HomeKey)
+            NavDisplay(
+                backStack = backStack,
+                onBack = { backStack.removeLastOrNull() },
+                entryProvider = entryProvider {
+                    entry<HomeKey> {
+                        HomeScreen(
+                            graph = graph,
+                            onOpenLog = { backStack.add(LogKey) },
+                        )
+                    }
+                    entry<LogKey> {
+                        LogScreen(
+                            graph = graph,
+                            onBack = { backStack.removeLastOrNull() },
+                            onOpenSession = { backStack.add(SessionDetailKey(it)) },
+                        )
+                    }
+                    entry<SessionDetailKey> { key ->
+                        SessionDetailScreen(
+                            graph = graph,
+                            sessionId = key.sessionId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                },
+            )
         }
     }
 }

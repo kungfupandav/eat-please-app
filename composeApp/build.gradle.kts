@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.metro)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -38,6 +39,8 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.core)
+            implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
         }

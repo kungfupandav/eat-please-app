@@ -1,7 +1,7 @@
 [versions]
 agp = "8.10.1"
 kotlin = "2.2.20"
-composeMultiplatform = "1.9.0"
+composeMultiplatform = "1.10.3"
 activityCompose = "1.10.1"
 android-compileSdk = "35"
 android-minSdk = "24"
@@ -11,7 +11,9 @@ room = "2.7.2"
 androidxSqlite = "2.5.2"
 kotlinxCoroutines = "1.10.2"
 kotlinxDatetime = "0.6.2"
+kotlinxSerialization = "1.9.0"
 metro = "0.10.0"
+navigation3 = "1.1.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -22,6 +24,8 @@ androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.r
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -31,3 +35,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
