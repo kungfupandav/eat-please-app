@@ -50,6 +50,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.lifecycle.service)
+            implementation(libs.tensorflow.lite)
         }
     }
 }
@@ -86,6 +90,52 @@ android {
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+compose.resources {
+    packageOfResClass = "com.eatplease.app.generated.resources"
+}
+
+// The MoViNet-A0-Stream int8 TFLite model (~5 MB) is fetched at build time
+// rather than committed. Sources are tried in order; the file is cached in
+// the (gitignored) composeResources/files directory.
+val movinetModelFile = layout.projectDirectory.file(
+    "src/commonMain/composeResources/files/movinet_a0_stream.tflite",
+)
+
+val downloadMoViNetModel by tasks.registering {
+    outputs.file(movinetModelFile)
+    onlyIf { !movinetModelFile.asFile.exists() }
+    doLast {
+        val urls = listOf(
+            "https://storage.googleapis.com/tfhub-lite-models/google/lite-model/movinet/a0/stream/kinetics-600/classification/tflite/int8/1.tflite",
+            "https://tfhub.dev/google/lite-model/movinet/a0/stream/kinetics-600/classification/tflite/int8/1?lite-format=tflite",
+        )
+        val target = movinetModelFile.asFile
+        target.parentFile.mkdirs()
+        var lastFailure: Exception? = null
+        for (url in urls) {
+            try {
+                java.net.URI(url).toURL().openStream().use { input ->
+                    target.outputStream().use { output -> input.copyTo(output) }
+                }
+                require(target.length() > 1_000_000) { "Downloaded model from $url is suspiciously small" }
+                logger.lifecycle("Downloaded MoViNet model from $url (${target.length()} bytes)")
+                return@doLast
+            } catch (e: Exception) {
+                lastFailure = e
+                target.delete()
+                logger.warn("Could not download MoViNet model from $url: ${e.message}")
+            }
+        }
+        throw GradleException("Failed to download the MoViNet model from any source", lastFailure)
+    }
+}
+
+tasks.configureEach {
+    if (name.contains("omposeResources")) {
+        dependsOn(downloadMoViNetModel)
+    }
 }
 
 dependencies {
