@@ -14,6 +14,10 @@ jobs:
   android:
     name: Android (debug + release)
     runs-on: ubuntu-latest
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+      FIREBASE_TESTER_GROUP: ${{ secrets.FIREBASE_TESTER_GROUP }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,9 +68,47 @@ jobs:
             echo "_Downloads require being signed in to GitHub with access to this repository. Artifacts are zipped by GitHub; unzip to get the APK._"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Runs only when the Firebase secrets are configured; skipped otherwise.
+      # Tester links from Firebase App Distribution install directly on the
+      # phone with no GitHub account needed.
+      - name: Distribute APKs via Firebase App Distribution
+        if: env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_ANDROID_APP_ID != ''
+        run: |
+          set -euo pipefail
+          npm install -g firebase-tools >/dev/null 2>&1
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          NOTES="$(git log -1 --pretty=%s) — ${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+          qr() { python3 -c "import urllib.parse,sys; print('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
+          {
+            echo "## 🚀 Firebase App Distribution (Android)"
+            echo ""
+            echo "| Variant | Tester link | QR code |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for V in debug release; do
+            APK=$(ls composeApp/build/outputs/apk/$V/*.apk | head -1)
+            OUT=$(firebase appdistribution:distribute "$APK" \
+              --app "$FIREBASE_ANDROID_APP_ID" \
+              --groups "${FIREBASE_TESTER_GROUP:-testers}" \
+              --release-notes "[$V] $NOTES" | tee /dev/stderr)
+            LINK=$(echo "$OUT" | grep -Eo 'https://appdistribution\.firebase\.dev/i/[A-Za-z0-9]+' | head -1)
+            echo "| $V | [$LINK]($LINK) | <img src=\"$(qr "$LINK")\" width=\"140\" alt=\"QR code for $V tester link\" /> |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "_Anyone in the tester group can open the link (or scan the QR) on their phone and install directly — no GitHub account required._" >> "$GITHUB_STEP_SUMMARY"
+
   ios:
     name: iOS (debug + release)
     runs-on: macos-15
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_IOS_APP_ID: ${{ secrets.FIREBASE_IOS_APP_ID }}
+      FIREBASE_TESTER_GROUP: ${{ secrets.FIREBASE_TESTER_GROUP }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -133,3 +175,85 @@ jobs:
             echo ""
             echo "_Downloads require being signed in to GitHub with access to this repository. These are iOS **simulator** bundles — drag the unzipped .app onto a booted simulator to install._"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Runs only when Apple signing + Firebase secrets are configured; skipped
+      # otherwise. Archives signed device builds (ad hoc) and distributes them
+      # to testers via Firebase App Distribution.
+      - name: Distribute signed device builds via Firebase App Distribution
+        if: env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_IOS_APP_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_CERTIFICATE_BASE64 != '' && env.APPLE_PROVISIONING_PROFILE_BASE64 != ''
+        run: |
+          set -euo pipefail
+
+          # --- Import signing certificate and provisioning profile ---
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          PP_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
+          echo -n "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+          PROFILE_NAME=$(security cms -D -i "$PP_PATH" | plutil -extract Name raw -o - -)
+          BUNDLE_ID=com.eatplease.app.EatPlease
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>ad-hoc</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key><string>$PROFILE_NAME</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+
+          # --- Firebase CLI ---
+          npm install -g firebase-tools >/dev/null 2>&1
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          NOTES="$(git log -1 --pretty=%s) — ${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+          qr() { python3 -c "import urllib.parse,sys; print('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
+          {
+            echo "## 🚀 Firebase App Distribution (iOS devices)"
+            echo ""
+            echo "| Variant | Tester link | QR code |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # --- Archive, export, and distribute both configurations ---
+          for CONFIG in Debug Release; do
+            xcodebuild archive \
+              -project iosApp/iosApp.xcodeproj \
+              -scheme iosApp \
+              -configuration "$CONFIG" \
+              -destination 'generic/platform=iOS' \
+              -archivePath "build/archives/$CONFIG.xcarchive" \
+              CODE_SIGN_STYLE=Manual \
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+              CODE_SIGN_IDENTITY="Apple Distribution" \
+              PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
+            xcodebuild -exportArchive \
+              -archivePath "build/archives/$CONFIG.xcarchive" \
+              -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+              -exportPath "build/ipa/$CONFIG"
+            IPA=$(ls build/ipa/$CONFIG/*.ipa | head -1)
+            OUT=$(firebase appdistribution:distribute "$IPA" \
+              --app "$FIREBASE_IOS_APP_ID" \
+              --groups "${FIREBASE_TESTER_GROUP:-testers}" \
+              --release-notes "[$CONFIG] $NOTES" | tee /dev/stderr)
+            LINK=$(echo "$OUT" | grep -Eo 'https://appdistribution\.firebase\.dev/i/[A-Za-z0-9]+' | head -1)
+            echo "| $CONFIG | [$LINK]($LINK) | <img src=\"$(qr "$LINK")\" width=\"140\" alt=\"QR code for $CONFIG tester link\" /> |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "_Testers in the group can open the link (or scan the QR) on a registered device and install directly — no GitHub account required._" >> "$GITHUB_STEP_SUMMARY"

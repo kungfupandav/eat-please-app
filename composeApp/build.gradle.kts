@@ -63,6 +63,9 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            // Signed with the debug key so CI/tester builds are installable;
+            // replace with a real signing config before shipping to stores.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
