@@ -34,16 +34,35 @@ jobs:
         run: ./gradlew :composeApp:assembleRelease
 
       - name: Upload debug APK
+        id: upload-debug
         uses: actions/upload-artifact@v4
         with:
           name: eatplease-android-debug
           path: composeApp/build/outputs/apk/debug/*.apk
 
       - name: Upload release APK
+        id: upload-release
         uses: actions/upload-artifact@v4
         with:
           name: eatplease-android-release
           path: composeApp/build/outputs/apk/release/*.apk
+
+      - name: Publish download buttons and QR codes
+        env:
+          DEBUG_URL: ${{ steps.upload-debug.outputs.artifact-url }}
+          RELEASE_URL: ${{ steps.upload-release.outputs.artifact-url }}
+        run: |
+          qr() { python3 -c "import urllib.parse,sys; print('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
+          {
+            echo "## 📱 Android builds"
+            echo ""
+            echo "| Variant | Download | QR code |"
+            echo "|---|---|---|"
+            echo "| Debug | [![Download debug APK](https://img.shields.io/badge/Download-Debug_APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)]($DEBUG_URL) | <img src=\"$(qr "$DEBUG_URL")\" width=\"140\" alt=\"QR code for debug APK\" /> |"
+            echo "| Release | [![Download release APK](https://img.shields.io/badge/Download-Release_APK-0969DA?style=for-the-badge&logo=android&logoColor=white)]($RELEASE_URL) | <img src=\"$(qr "$RELEASE_URL")\" width=\"140\" alt=\"QR code for release APK\" /> |"
+            echo ""
+            echo "_Downloads require being signed in to GitHub with access to this repository. Artifacts are zipped by GitHub; unzip to get the APK._"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   ios:
     name: iOS (debug + release)
@@ -85,13 +104,32 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=""
 
       - name: Upload debug app
+        id: upload-debug
         uses: actions/upload-artifact@v4
         with:
           name: eatplease-ios-debug-simulator
           path: build/ios-debug/Build/Products/Debug-iphonesimulator/*.app
 
       - name: Upload release app
+        id: upload-release
         uses: actions/upload-artifact@v4
         with:
           name: eatplease-ios-release-simulator
           path: build/ios-release/Build/Products/Release-iphonesimulator/*.app
+
+      - name: Publish download buttons and QR codes
+        env:
+          DEBUG_URL: ${{ steps.upload-debug.outputs.artifact-url }}
+          RELEASE_URL: ${{ steps.upload-release.outputs.artifact-url }}
+        run: |
+          qr() { python3 -c "import urllib.parse,sys; print('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
+          {
+            echo "## 🍎 iOS builds (simulator)"
+            echo ""
+            echo "| Variant | Download | QR code |"
+            echo "|---|---|---|"
+            echo "| Debug | [![Download debug app](https://img.shields.io/badge/Download-Debug_app-999999?style=for-the-badge&logo=apple&logoColor=white)]($DEBUG_URL) | <img src=\"$(qr "$DEBUG_URL")\" width=\"140\" alt=\"QR code for debug app\" /> |"
+            echo "| Release | [![Download release app](https://img.shields.io/badge/Download-Release_app-0969DA?style=for-the-badge&logo=apple&logoColor=white)]($RELEASE_URL) | <img src=\"$(qr "$RELEASE_URL")\" width=\"140\" alt=\"QR code for release app\" /> |"
+            echo ""
+            echo "_Downloads require being signed in to GitHub with access to this repository. These are iOS **simulator** bundles — drag the unzipped .app onto a booted simulator to install._"
+          } >> "$GITHUB_STEP_SUMMARY"
