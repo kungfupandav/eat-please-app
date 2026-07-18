@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
@@ -18,13 +19,24 @@ kotlin {
         }
     }
 
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    iosArm64()
+    iosSimulatorArm64()
+
+    cocoapods {
+        version = "1.0"
+        summary = "EatPlease shared module"
+        homepage = "https://github.com/vikrama/eat-please-app"
+        ios.deploymentTarget = "15.3"
+        podfile = project.file("../iosApp/Podfile")
+
+        framework {
             baseName = "ComposeApp"
             isStatic = true
+        }
+
+        pod("TensorFlowLiteC") {
+            version = libs.versions.tensorflowLiteC.get()
+            moduleName = "TensorFlowLiteC"
         }
     }
 
