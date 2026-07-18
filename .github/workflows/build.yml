@@ -92,8 +92,12 @@ jobs:
               --app "$FIREBASE_ANDROID_APP_ID" \
               --groups "${FIREBASE_TESTER_GROUP:-testers}" \
               --release-notes "[$V] $NOTES" | tee /dev/stderr)
-            LINK=$(echo "$OUT" | grep -Eo 'https://appdistribution\.firebase\.dev/i/[A-Za-z0-9]+' | head -1)
-            echo "| $V | [$LINK]($LINK) | <img src=\"$(qr "$LINK")\" width=\"140\" alt=\"QR code for $V tester link\" /> |" >> "$GITHUB_STEP_SUMMARY"
+            LINK=$(printf '%s' "$OUT" | sed 's/\x1b\[[0-9;]*m//g' | grep -Eo 'https://appdistribution\.firebase\.(dev|google\.com)/[^[:space:]]+' | head -1 || true)
+            if [ -n "$LINK" ]; then
+              echo "| $V | [$LINK]($LINK) | <img src=\"$(qr "$LINK")\" width=\"140\" alt=\"QR code for $V tester link\" /> |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| $V | distributed — link in the [Firebase console](https://console.firebase.google.com/) | — |" >> "$GITHUB_STEP_SUMMARY"
+            fi
           done
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "_Anyone in the tester group can open the link (or scan the QR) on their phone and install directly — no GitHub account required._" >> "$GITHUB_STEP_SUMMARY"
@@ -252,8 +256,12 @@ jobs:
               --app "$FIREBASE_IOS_APP_ID" \
               --groups "${FIREBASE_TESTER_GROUP:-testers}" \
               --release-notes "[$CONFIG] $NOTES" | tee /dev/stderr)
-            LINK=$(echo "$OUT" | grep -Eo 'https://appdistribution\.firebase\.dev/i/[A-Za-z0-9]+' | head -1)
-            echo "| $CONFIG | [$LINK]($LINK) | <img src=\"$(qr "$LINK")\" width=\"140\" alt=\"QR code for $CONFIG tester link\" /> |" >> "$GITHUB_STEP_SUMMARY"
+            LINK=$(printf '%s' "$OUT" | sed 's/\x1b\[[0-9;]*m//g' | grep -Eo 'https://appdistribution\.firebase\.(dev|google\.com)/[^[:space:]]+' | head -1 || true)
+            if [ -n "$LINK" ]; then
+              echo "| $CONFIG | [$LINK]($LINK) | <img src=\"$(qr "$LINK")\" width=\"140\" alt=\"QR code for $CONFIG tester link\" /> |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| $CONFIG | distributed — link in the [Firebase console](https://console.firebase.google.com/) | — |" >> "$GITHUB_STEP_SUMMARY"
+            fi
           done
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "_Testers in the group can open the link (or scan the QR) on a registered device and install directly — no GitHub account required._" >> "$GITHUB_STEP_SUMMARY"
