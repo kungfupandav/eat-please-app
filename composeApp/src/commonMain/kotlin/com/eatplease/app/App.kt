@@ -6,32 +6,48 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import androidx.savedstate.serialization.SavedStateConfiguration
 import com.eatplease.app.di.AppGraph
 import com.eatplease.app.di.Di
 import com.eatplease.app.ui.HomeScreen
 import com.eatplease.app.ui.LogScreen
 import com.eatplease.app.ui.SessionDetailScreen
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 
 @Serializable
-data object HomeKey : NavKey
+sealed interface AppNavKey : NavKey
 
 @Serializable
-data object LogKey : NavKey
+data object HomeKey : AppNavKey
 
 @Serializable
-data class SessionDetailKey(val sessionId: Long) : NavKey
+data object LogKey : AppNavKey
+
+@Serializable
+data class SessionDetailKey(val sessionId: Long) : AppNavKey
+
+private val navBackStackConfig = SavedStateConfiguration {
+    serializersModule = SerializersModule {
+        polymorphic(NavKey::class) {
+            subclass(HomeKey::class, HomeKey.serializer())
+            subclass(LogKey::class, LogKey.serializer())
+            subclass(SessionDetailKey::class, SessionDetailKey.serializer())
+        }
+    }
+}
 
 /** Root composable shared by the Android and iOS apps; Navigation 3 back stack. */
 @Composable
 fun App(graph: AppGraph = Di.graph) {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            val backStack = rememberNavBackStack(HomeKey)
+            val backStack = rememberNavBackStack(navBackStackConfig, HomeKey)
             NavDisplay(
                 backStack = backStack,
                 onBack = { backStack.removeLastOrNull() },

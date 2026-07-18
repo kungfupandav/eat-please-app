@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.time.ExperimentalTime::class)
+
 package com.eatplease.app.ui
 
 import kotlinx.datetime.Instant
