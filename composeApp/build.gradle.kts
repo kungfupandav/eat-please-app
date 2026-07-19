@@ -50,6 +50,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.lifecycle.service)
+            implementation(libs.tensorflow.lite)
         }
     }
 }
@@ -87,6 +91,46 @@ android {
 room {
     schemaDirectory("$projectDir/schemas")
 }
+
+compose.resources {
+    packageOfResClass = "com.eatplease.app.generated.resources"
+}
+
+// The MoViNet-A0-Stream int8 TFLite model (~3 MB) is checked into the repo at
+// composeApp/src/commonMain/composeResources/files/movinet_a0_stream.tflite and
+// packaged as a Compose resource (read at runtime via Res.readBytes). This task
+// fails the build fast if the model is missing or truncated — e.g. an incomplete
+// clone or a Git LFS pointer that wasn't fetched — so we never ship without it.
+val movinetModelPath = "composeApp/src/commonMain/composeResources/files/movinet_a0_stream.tflite"
+val movinetModelFile = layout.projectDirectory
+    .file("src/commonMain/composeResources/files/movinet_a0_stream.tflite")
+    .asFile
+
+val checkMoViNetModel by tasks.registering {
+    val model = movinetModelFile
+    val displayPath = movinetModelPath
+    doLast {
+        require(model.exists()) {
+            "MoViNet model missing at $displayPath. It is checked into the repo; " +
+                "ensure the clone is complete (and `git lfs pull` if LFS is enabled)."
+        }
+        require(model.length() > 1_000_000) {
+            "MoViNet model at $displayPath looks truncated (${model.length()} bytes)."
+        }
+    }
+}
+
+listOf(
+    "assembleDebug",
+    "assembleRelease",
+    "podspec",
+    "syncFramework",
+).forEach { taskName ->
+    tasks.matching { it.name.equals(taskName, ignoreCase = true) }.configureEach {
+        dependsOn(checkMoViNetModel)
+    }
+}
+
 
 dependencies {
     debugImplementation(compose.uiTooling)

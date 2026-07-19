@@ -63,6 +63,9 @@ interface AppGraph {
     @SingleIn(AppScope::class)
     fun provideWatchController(
         manager: WatchSessionManager,
+        scope: CoroutineScope,
+        cameraSettings: CameraSettings,
+    ): WatchController = createPlatformWatchController(manager, scope, cameraSettings)
         classifier: FrameClassifier,
         scope: CoroutineScope,
     ): WatchController = FakeWatchController(manager, classifier, scope)
