@@ -4,12 +4,10 @@ import com.eatplease.app.data.DetectionRepository
 import com.eatplease.app.data.EatPleaseDatabase
 import com.eatplease.app.data.WatchDao
 import com.eatplease.app.data.createEatPleaseDatabase
-import com.eatplease.app.detection.FakeFrameClassifier
-import com.eatplease.app.detection.FakeWatchController
-import com.eatplease.app.detection.FrameClassifier
 import com.eatplease.app.detection.PaceAnalyzer
 import com.eatplease.app.detection.WatchController
 import com.eatplease.app.detection.WatchSessionManager
+import com.eatplease.app.detection.createPlatformWatchController
 import com.eatplease.app.settings.CameraSettings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
@@ -53,12 +51,6 @@ interface AppGraph {
         scope: CoroutineScope,
     ): WatchSessionManager = WatchSessionManager(repository, scope)
 
-    // The fake classifier/controller pair is replaced by the platform
-    // camera + MoViNet pipelines in the follow-up PRs.
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideClassifier(): FrameClassifier = FakeFrameClassifier()
-
     @Provides
     @SingleIn(AppScope::class)
     fun provideWatchController(
@@ -66,9 +58,6 @@ interface AppGraph {
         scope: CoroutineScope,
         cameraSettings: CameraSettings,
     ): WatchController = createPlatformWatchController(manager, scope, cameraSettings)
-        classifier: FrameClassifier,
-        scope: CoroutineScope,
-    ): WatchController = FakeWatchController(manager, classifier, scope)
 
     @Provides
     @SingleIn(AppScope::class)

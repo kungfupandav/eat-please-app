@@ -16,6 +16,7 @@ metro = "0.10.0"
 navigation3 = "1.1.1"
 camerax = "1.4.2"
 tensorflowLite = "2.16.1"
+tensorflowLiteC = "2.14.0"
 lifecycleService = "2.8.7"
 
 [libraries]
@@ -43,3 +44,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }

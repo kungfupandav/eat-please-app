@@ -129,10 +129,16 @@ jobs:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
 
+      - name: Generate podspec and install pods
+        run: |
+          ./gradlew :composeApp:generateDummyFramework :composeApp:podspec
+          cd iosApp
+          pod install
+
       - name: Build debug app (simulator)
         run: |
           xcodebuild build \
-            -project iosApp/iosApp.xcodeproj \
+            -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
@@ -143,7 +149,7 @@ jobs:
       - name: Build release app (simulator)
         run: |
           xcodebuild build \
-            -project iosApp/iosApp.xcodeproj \
+            -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Release \
             -destination 'generic/platform=iOS Simulator' \
@@ -240,7 +246,7 @@ jobs:
           # --- Archive, export, and distribute both configurations ---
           for CONFIG in Debug Release; do
             xcodebuild archive \
-              -project iosApp/iosApp.xcodeproj \
+              -workspace iosApp/iosApp.xcworkspace \
               -scheme iosApp \
               -configuration "$CONFIG" \
               -destination 'generic/platform=iOS' \
