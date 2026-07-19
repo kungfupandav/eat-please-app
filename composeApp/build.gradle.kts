@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.net.URI
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -97,66 +96,27 @@ compose.resources {
     packageOfResClass = "com.eatplease.app.generated.resources"
 }
 
-// The MoViNet-A0-Stream int8 TFLite model (~5 MB) is fetched at build time
-// rather than committed. Sources are tried in order; the file is cached in
-// the (gitignored) composeResources/files directory.
-tasks.register("downloadMoViNetModel") {
-    notCompatibleWithConfigurationCache("Downloads the MoViNet TFLite model at execution time")
-    val modelRelativePath = "src/commonMain/composeResources/files/movinet_a0_stream.tflite"
-    val modelFile = project.file(modelRelativePath)
-    outputs.file(modelFile)
-    onlyIf { !modelFile.exists() }
+// The MoViNet-A0-Stream int8 TFLite model (~3 MB) is checked into the repo at
+// composeApp/src/commonMain/composeResources/files/movinet_a0_stream.tflite and
+// packaged as a Compose resource (read at runtime via Res.readBytes). This task
+// fails the build fast if the model is missing or truncated — e.g. an incomplete
+// clone or a Git LFS pointer that wasn't fetched — so we never ship without it.
+val movinetModelPath = "composeApp/src/commonMain/composeResources/files/movinet_a0_stream.tflite"
+val movinetModelFile = layout.projectDirectory
+    .file("src/commonMain/composeResources/files/movinet_a0_stream.tflite")
+    .asFile
+
+val checkMoViNetModel by tasks.registering {
+    val model = movinetModelFile
+    val displayPath = movinetModelPath
     doLast {
-        val target = modelFile
-        target.parentFile.mkdirs()
-        val overrideUrl = (project.findProperty("movinetModelUrl") as String?)
-            ?: System.getenv("MOVINET_MODEL_URL")
-        val urls = buildList {
-            if (!overrideUrl.isNullOrBlank()) add(overrideUrl)
-            addAll(
-                listOf(
-                    "https://storage.googleapis.com/tfhub-lite-models/google/lite-model/movinet/a0/stream/kinetics-600/classification/tflite/int8/1.tflite",
-                    "https://tfhub.dev/google/lite-model/movinet/a0/stream/kinetics-600/classification/tflite/int8/1?lite-format=tflite",
-                ),
-            )
+        require(model.exists()) {
+            "MoViNet model missing at $displayPath. It is checked into the repo; " +
+                "ensure the clone is complete (and `git lfs pull` if LFS is enabled)."
         }
-        var lastFailure: Exception? = null
-        for (url in urls) {
-            try {
-                val connection = URI(url).toURL().openConnection() as java.net.HttpURLConnection
-                connection.instanceFollowRedirects = true
-                connection.setRequestProperty(
-                    "User-Agent",
-                    "EatPlease/1.0 (+https://github.com/vikrama/eat-please-app)",
-                )
-                connection.connectTimeout = 30_000
-                connection.readTimeout = 120_000
-                connection.connect()
-                if (connection.responseCode !in 200..299) {
-                    error("HTTP ${connection.responseCode} for $url")
-                }
-                connection.inputStream.use { input ->
-                    target.outputStream().use { output -> input.copyTo(output) }
-                }
-                val header = ByteArray(4)
-                target.inputStream().use { stream ->
-                    require(stream.read(header) == 4) { "Downloaded model from $url is empty" }
-                }
-                require(header[0] != 0x3c.toByte()) {
-                    "Downloaded model from $url looks like HTML, not a TFLite file"
-                }
-                require(target.length() > 1_000_000) {
-                    "Downloaded model from $url is suspiciously small"
-                }
-                logger.lifecycle("Downloaded MoViNet model from $url (${target.length()} bytes)")
-                return@doLast
-            } catch (e: Exception) {
-                lastFailure = e
-                target.delete()
-                logger.warn("Could not download MoViNet model from $url: ${e.message}")
-            }
+        require(model.length() > 1_000_000) {
+            "MoViNet model at $displayPath looks truncated (${model.length()} bytes)."
         }
-        throw GradleException("Failed to download the MoViNet model from any source", lastFailure)
     }
 }
 
@@ -167,7 +127,7 @@ listOf(
     "syncFramework",
 ).forEach { taskName ->
     tasks.matching { it.name.equals(taskName, ignoreCase = true) }.configureEach {
-        dependsOn("downloadMoViNetModel")
+        dependsOn(checkMoViNetModel)
     }
 }
 
