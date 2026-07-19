@@ -57,7 +57,7 @@ or open the project in Android Studio and run the `composeApp` configuration.
 ### iOS
 
 ```shell
-./gradlew :composeApp:podspec
+./gradlew :composeApp:generateDummyFramework :composeApp:podspec
 cd iosApp && pod install
 open iosApp/iosApp.xcworkspace   # then run the iosApp scheme in Xcode
 ```

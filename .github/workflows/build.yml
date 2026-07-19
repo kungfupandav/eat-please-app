@@ -131,7 +131,7 @@ jobs:
 
       - name: Generate podspec and install pods
         run: |
-          ./gradlew :composeApp:podspec
+          ./gradlew :composeApp:generateDummyFramework :composeApp:podspec
           cd iosApp
           pod install
 
