@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ fun DetectionCameraFrame(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(max = 240.dp)
             .aspectRatio(3f / 4f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
