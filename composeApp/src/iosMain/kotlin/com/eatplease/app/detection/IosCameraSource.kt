@@ -21,8 +21,6 @@ import platform.AVFoundation.AVCaptureVideoDataOutput
 import platform.AVFoundation.AVCaptureVideoDataOutputSampleBufferDelegateProtocol
 import platform.AVFoundation.AVCaptureVideoOrientationPortrait
 import platform.AVFoundation.AVMediaTypeVideo
-import platform.AVFoundation.connectionWithMediaType
-import platform.CoreFoundation.CFBridgingRelease
 import platform.CoreMedia.CMSampleBufferGetImageBuffer
 import platform.CoreMedia.CMSampleBufferRef
 import platform.CoreVideo.CVPixelBufferGetBaseAddress
@@ -106,7 +104,7 @@ class IosCameraSource(
         if (session.outputs.isNotEmpty()) return
         val output = AVCaptureVideoDataOutput()
         output.videoSettings = mapOf(
-            CFBridgingRelease(kCVPixelBufferPixelFormatTypeKey) to kCVPixelFormatType_32BGRA,
+            kCVPixelBufferPixelFormatTypeKey to kCVPixelFormatType_32BGRA,
         )
         output.alwaysDiscardsLateVideoFrames = true
         output.setSampleBufferDelegate(delegate, queue)
