@@ -41,6 +41,3 @@ xcuserdata/
 *.xcscmblueprint
 *.xccheckout
 DerivedData/
-
-# Downloaded ML models (fetched by the downloadMoViNetModel Gradle task)
-composeApp/src/commonMain/composeResources/files/*.tflite
