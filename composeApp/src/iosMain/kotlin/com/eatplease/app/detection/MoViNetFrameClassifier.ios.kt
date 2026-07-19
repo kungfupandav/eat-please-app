@@ -1,5 +1,7 @@
 package com.eatplease.app.detection
 
+import cnames.structs.TfLiteInterpreter
+import cnames.structs.TfLiteSignatureRunner
 import cocoapods.TensorFlowLiteC.TfLiteInterpreterCreate
 import cocoapods.TensorFlowLiteC.TfLiteInterpreterGetSignatureKey
 import cocoapods.TensorFlowLiteC.TfLiteInterpreterGetSignatureRunner
@@ -30,6 +32,7 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.get
+import kotlinx.cinterop.set
 import kotlinx.cinterop.nativeHeap
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.toKString
@@ -48,8 +51,8 @@ import platform.posix.memset
 class MoViNetFrameClassifier(modelBytes: ByteArray) : FrameClassifier {
 
     private val modelData = nativeHeap.allocArray<ByteVar>(modelBytes.size)
-    private val interpreter: kotlinx.cinterop.CPointer<cocoapods.TensorFlowLiteC.TfLiteInterpreter>
-    private val runner: kotlinx.cinterop.CPointer<cocoapods.TensorFlowLiteC.TfLiteSignatureRunner>
+    private val interpreter: kotlinx.cinterop.CPointer<TfLiteInterpreter>
+    private val runner: kotlinx.cinterop.CPointer<TfLiteSignatureRunner>
     private val imageInputName: String
     private val inputNames: List<String>
     private val outputNames: List<String>
