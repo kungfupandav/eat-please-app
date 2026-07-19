@@ -79,6 +79,9 @@ fun HomeScreen(graph: AppGraph, onOpenLog: () -> Unit) {
         DetectionCameraFrame(
             active = watching != null,
             isEating = watching?.isEatingNow == true,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .align(Alignment.CenterHorizontally),
         )
 
         Spacer(Modifier.weight(1f))
