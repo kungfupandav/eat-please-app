@@ -1,6 +1,12 @@
 package com.eatplease.app
 
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -46,11 +52,24 @@ private val navBackStackConfig = SavedStateConfiguration {
 @Composable
 fun App(graph: AppGraph = Di.graph) {
     MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing),
+        ) {
             val backStack = rememberNavBackStack(navBackStackConfig, HomeKey)
             NavDisplay(
                 backStack = backStack,
                 onBack = { backStack.removeLastOrNull() },
+                transitionSpec = {
+                    slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+                },
+                popTransitionSpec = {
+                    slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+                },
+                predictivePopTransitionSpec = {
+                    slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+                },
                 entryProvider = entryProvider {
                     entry<HomeKey> {
                         HomeScreen(
