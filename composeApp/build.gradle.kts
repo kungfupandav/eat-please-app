@@ -148,12 +148,12 @@ tasks.register("downloadMoViNetModel") {
                 require(target.length() > 1_000_000) {
                     "Downloaded model from $url is suspiciously small"
                 }
-                project.logger.lifecycle("Downloaded MoViNet model from $url (${target.length()} bytes)")
+                logger.lifecycle("Downloaded MoViNet model from $url (${target.length()} bytes)")
                 return@doLast
             } catch (e: Exception) {
                 lastFailure = e
                 target.delete()
-                project.logger.warn("Could not download MoViNet model from $url: ${e.message}")
+                logger.warn("Could not download MoViNet model from $url: ${e.message}")
             }
         }
         throw GradleException("Failed to download the MoViNet model from any source", lastFailure)
