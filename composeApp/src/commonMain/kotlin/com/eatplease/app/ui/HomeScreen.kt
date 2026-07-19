@@ -75,6 +75,12 @@ fun HomeScreen(graph: AppGraph, onOpenLog: () -> Unit) {
             }
         }
 
+        val watching = watchState as? WatchState.Watching
+        DetectionCameraFrame(
+            active = watching != null,
+            isEating = watching?.isEatingNow == true,
+        )
+
         Spacer(Modifier.weight(1f))
 
         Button(
