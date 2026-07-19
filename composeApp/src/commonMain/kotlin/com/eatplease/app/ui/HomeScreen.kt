@@ -2,6 +2,7 @@ package com.eatplease.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,17 +14,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -38,10 +42,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomeScreen(graph: AppGraph, onOpenLog: () -> Unit) {
+fun HomeScreen(
+    graph: AppGraph,
+    onOpenLog: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     val watchState by graph.sessionManager.state.collectAsState()
     val facing by graph.cameraSettings.facing.collectAsState()
     val scope = rememberCoroutineScope()
+    var menuExpanded by remember { mutableStateOf(false) }
 
     // Ticks once a second while watching so "last seen Xs ago" stays fresh.
     var now by remember { mutableLongStateOf(currentEpochMillis()) }
@@ -56,7 +65,36 @@ fun HomeScreen(graph: AppGraph, onOpenLog: () -> Unit) {
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        Text("Eat Please", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Text("☰", style = MaterialTheme.typography.headlineSmall)
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Log") },
+                        onClick = {
+                            menuExpanded = false
+                            onOpenLog()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Settings") },
+                        onClick = {
+                            menuExpanded = false
+                            onOpenSettings()
+                        },
+                    )
+                }
+            }
+            Text("Eat Please", style = MaterialTheme.typography.headlineMedium)
+        }
 
         StatusCard(watchState, now)
 
@@ -99,10 +137,6 @@ fun HomeScreen(graph: AppGraph, onOpenLog: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(56.dp),
         ) {
             Text(if (watchState is WatchState.Watching) "STOP WATCHING" else "START WATCHING")
-        }
-
-        TextButton(onClick = onOpenLog, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("View log ▸")
         }
     }
 }

@@ -21,6 +21,7 @@ import com.eatplease.app.di.Di
 import com.eatplease.app.ui.HomeScreen
 import com.eatplease.app.ui.LogScreen
 import com.eatplease.app.ui.SessionDetailScreen
+import com.eatplease.app.ui.SettingsScreen
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -36,6 +37,9 @@ data object HomeKey : AppNavKey
 data object LogKey : AppNavKey
 
 @Serializable
+data object SettingsKey : AppNavKey
+
+@Serializable
 data class SessionDetailKey(val sessionId: Long) : AppNavKey
 
 private val navBackStackConfig = SavedStateConfiguration {
@@ -43,6 +47,7 @@ private val navBackStackConfig = SavedStateConfiguration {
         polymorphic(NavKey::class) {
             subclass(HomeKey::class, HomeKey.serializer())
             subclass(LogKey::class, LogKey.serializer())
+            subclass(SettingsKey::class, SettingsKey.serializer())
             subclass(SessionDetailKey::class, SessionDetailKey.serializer())
         }
     }
@@ -75,6 +80,7 @@ fun App(graph: AppGraph = Di.graph) {
                         HomeScreen(
                             graph = graph,
                             onOpenLog = { backStack.add(LogKey) },
+                            onOpenSettings = { backStack.add(SettingsKey) },
                         )
                     }
                     entry<LogKey> {
@@ -82,6 +88,11 @@ fun App(graph: AppGraph = Di.graph) {
                             graph = graph,
                             onBack = { backStack.removeLastOrNull() },
                             onOpenSession = { backStack.add(SessionDetailKey(it)) },
+                        )
+                    }
+                    entry<SettingsKey> {
+                        SettingsScreen(
+                            onBack = { backStack.removeLastOrNull() },
                         )
                     }
                     entry<SessionDetailKey> { key ->

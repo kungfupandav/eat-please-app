@@ -81,7 +81,7 @@ private fun computeStats(graph: AppGraph, session: WatchSession, events: List<Ea
     )
 
 @Composable
-private fun Header(title: String, onBack: () -> Unit) {
+internal fun Header(title: String, onBack: () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
