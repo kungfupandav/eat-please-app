@@ -69,6 +69,7 @@ class IosCameraSource(
     fun start(facing: CameraFacing) {
         configureInput(facing)
         configureOutputOnce()
+        IosCameraPreviewBridge.setSession(session)
         dispatch_async(queue) { session.startRunning() }
     }
 
@@ -77,6 +78,7 @@ class IosCameraSource(
     }
 
     fun stop() {
+        IosCameraPreviewBridge.setSession(null)
         dispatch_async(queue) { session.stopRunning() }
     }
 

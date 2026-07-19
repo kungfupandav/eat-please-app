@@ -13,6 +13,7 @@ import android.os.SystemClock
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -24,6 +25,7 @@ import com.eatplease.app.generated.resources.Res
 import com.eatplease.app.settings.CameraFacing
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -40,6 +42,8 @@ class WatchForegroundService : LifecycleService() {
 
     private var classifier: MoViNetFrameClassifier? = null
     private var cameraProvider: ProcessCameraProvider? = null
+    private var previewUseCase: Preview? = null
+    private var previewSurfaceJob: Job? = null
     private val busy = AtomicBoolean(false)
     private var lastFrameAtMs = 0L
 
@@ -84,12 +88,22 @@ class WatchForegroundService : LifecycleService() {
     private suspend fun bindCamera(classifier: MoViNetFrameClassifier) {
         val provider = ProcessCameraProvider.getInstance(this).await()
         cameraProvider = provider
+        previewSurfaceJob?.cancel()
+        previewSurfaceJob = lifecycleScope.launch {
+            CameraPreviewBridge.surfaceProvider.collect { surfaceProvider ->
+                previewUseCase?.setSurfaceProvider(surfaceProvider)
+            }
+        }
         Di.graph.cameraSettings.facing.collect { facing ->
             provider.unbindAll()
             classifier.reset()
             val selector = when (facing) {
                 CameraFacing.FRONT -> CameraSelector.DEFAULT_FRONT_CAMERA
                 CameraFacing.BACK -> CameraSelector.DEFAULT_BACK_CAMERA
+            }
+            val preview = Preview.Builder().build().also { useCase ->
+                useCase.setSurfaceProvider(CameraPreviewBridge.surfaceProvider.value)
+                previewUseCase = useCase
             }
             val analysis = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -98,7 +112,7 @@ class WatchForegroundService : LifecycleService() {
             analysis.setAnalyzer(ContextCompat.getMainExecutor(this)) { image ->
                 analyzeFrame(image, classifier)
             }
-            provider.bindToLifecycle(this, selector, analysis)
+            provider.bindToLifecycle(this, selector, preview, analysis)
         }
     }
 
@@ -148,6 +162,9 @@ class WatchForegroundService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        previewSurfaceJob?.cancel()
+        previewSurfaceJob = null
+        previewUseCase = null
         cameraProvider?.unbindAll()
         classifier?.close()
         classifier = null
