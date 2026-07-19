@@ -188,11 +188,34 @@ jobs:
             echo "_Downloads require being signed in to GitHub with access to this repository. These are iOS **simulator** bundles — drag the unzipped .app onto a booted simulator to install._"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Runs only when Apple signing + Firebase secrets are configured; skipped
-      # otherwise. Archives signed device builds (ad hoc) and distributes them
-      # to testers via Firebase App Distribution.
+      # Explain why Firebase iOS distribution did not run (simulator .app
+      # bundles cannot be uploaded to App Distribution — a signed IPA is required).
+      - name: Note skipped Firebase iOS distribution
+        if: env.FIREBASE_SERVICE_ACCOUNT == '' || env.FIREBASE_IOS_APP_ID == '' || env.APPLE_TEAM_ID == '' || env.APPLE_CERTIFICATE_BASE64 == '' || env.APPLE_PROVISIONING_PROFILE_BASE64 == ''
+        run: |
+          {
+            echo "## Firebase App Distribution (iOS)"
+            echo ""
+            echo "_Skipped — device IPAs need Apple signing secrets in addition to Firebase._"
+            echo ""
+            echo "| Secret | Present |"
+            echo "|---|---|"
+            echo "| \`FIREBASE_SERVICE_ACCOUNT\` | $([ -n "$FIREBASE_SERVICE_ACCOUNT" ] && echo yes || echo **missing**) |"
+            echo "| \`FIREBASE_IOS_APP_ID\` | $([ -n "$FIREBASE_IOS_APP_ID" ] && echo yes || echo **missing**) |"
+            echo "| \`APPLE_TEAM_ID\` | $([ -n "$APPLE_TEAM_ID" ] && echo yes || echo **missing**) |"
+            echo "| \`APPLE_CERTIFICATE_BASE64\` | $([ -n "$APPLE_CERTIFICATE_BASE64" ] && echo yes || echo **missing**) |"
+            echo "| \`APPLE_CERTIFICATE_PASSWORD\` | $([ -n "${APPLE_CERTIFICATE_PASSWORD:-}" ] && echo yes || echo optional/empty) |"
+            echo "| \`APPLE_PROVISIONING_PROFILE_BASE64\` | $([ -n "$APPLE_PROVISIONING_PROFILE_BASE64" ] && echo yes || echo **missing**) |"
+            echo "| \`FIREBASE_TESTER_GROUP\` | $([ -n "${FIREBASE_TESTER_GROUP:-}" ] && echo yes || echo defaults to \`testers\`) |"
+            echo ""
+            echo "Add an **Ad Hoc** (or Enterprise) distribution certificate + matching provisioning profile for \`com.eatplease.app.EatPlease\`, then re-run. Simulator artifacts above are unchanged."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Runs only when Apple signing + Firebase secrets are configured.
+      # Archives signed device builds (ad hoc) and distributes them via Firebase.
       - name: Distribute signed device builds via Firebase App Distribution
         if: env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_IOS_APP_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_CERTIFICATE_BASE64 != '' && env.APPLE_PROVISIONING_PROFILE_BASE64 != ''
+        id: ios-firebase
         run: |
           set -euo pipefail
 
@@ -206,14 +229,30 @@ jobs:
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "${APPLE_CERTIFICATE_PASSWORD:-}" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
           security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
-          PROFILE_NAME=$(security cms -D -i "$PP_PATH" | plutil -extract Name raw -o - -)
-          BUNDLE_ID=com.eatplease.app.EatPlease
 
+          PROFILE_UUID=$(security cms -D -i "$PP_PATH" | plutil -extract UUID raw -o - -)
+          PROFILE_NAME=$(security cms -D -i "$PP_PATH" | plutil -extract Name raw -o - -)
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
+
+          # Prefer Apple Distribution; fall back to the first identity in the keychain.
+          SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | sed -n 's/.*"\(Apple Distribution[^"]*\)".*/\1/p' | head -1)
+          if [ -z "$SIGN_IDENTITY" ]; then
+            SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+              | sed -n 's/.*"\(.*\)".*/\1/p' | head -1)
+          fi
+          if [ -z "$SIGN_IDENTITY" ]; then
+            echo "::error::No codesigning identity found in imported certificate"
+            exit 1
+          fi
+          echo "Using signing identity: $SIGN_IDENTITY"
+          echo "Using provisioning profile: $PROFILE_NAME ($PROFILE_UUID)"
+
+          BUNDLE_ID=com.eatplease.app.EatPlease
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -222,6 +261,7 @@ jobs:
             <key>method</key><string>ad-hoc</string>
             <key>signingStyle</key><string>manual</string>
             <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>compileBitcode</key><false/>
             <key>provisioningProfiles</key>
             <dict>
               <key>$BUNDLE_ID</key><string>$PROFILE_NAME</string>
@@ -237,7 +277,7 @@ jobs:
           NOTES="$(git log -1 --pretty=%s) — ${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
           qr() { python3 -c "import urllib.parse,sys; print('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
           {
-            echo "## 🚀 Firebase App Distribution (iOS devices)"
+            echo "## Firebase App Distribution (iOS devices)"
             echo ""
             echo "| Variant | Tester link | QR code |"
             echo "|---|---|---|"
@@ -253,7 +293,7 @@ jobs:
               -archivePath "build/archives/$CONFIG.xcarchive" \
               CODE_SIGN_STYLE=Manual \
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-              CODE_SIGN_IDENTITY="Apple Distribution" \
+              CODE_SIGN_IDENTITY="$SIGN_IDENTITY" \
               PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
             xcodebuild -exportArchive \
               -archivePath "build/archives/$CONFIG.xcarchive" \
@@ -273,3 +313,21 @@ jobs:
           done
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "_Testers in the group can open the link (or scan the QR) on a registered device and install directly — no GitHub account required._" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload debug IPA
+        if: steps.ios-firebase.outcome == 'success'
+        id: upload-debug-ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: eatplease-ios-debug-ipa
+          path: build/ipa/Debug/*.ipa
+          if-no-files-found: ignore
+
+      - name: Upload release IPA
+        if: steps.ios-firebase.outcome == 'success'
+        id: upload-release-ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: eatplease-ios-release-ipa
+          path: build/ipa/Release/*.ipa
+          if-no-files-found: ignore
