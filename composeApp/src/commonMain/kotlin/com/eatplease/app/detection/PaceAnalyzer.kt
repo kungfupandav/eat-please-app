@@ -11,6 +11,8 @@ data class SessionStats(
     /** Eating bursts (grouped consecutive seconds) per minute of session. */
     val bitesPerMinute: Double,
     val longestPauseSeconds: Long,
+    /** Average gap between consecutive bursts (start of next minus end of previous); 0 with fewer than 2 bursts. */
+    val averageGapSeconds: Long,
     val paceVerdict: PaceVerdict,
 )
 
@@ -45,6 +47,7 @@ class PaceAnalyzer(
             eatingSeconds = sorted.size,
             bitesPerMinute = bitesPerMinute,
             longestPauseSeconds = longestPause(bursts, sessionStartEpochSecond, sessionEndEpochSecond),
+            averageGapSeconds = averageGap(bursts),
             paceVerdict = verdict(bursts),
         )
     }
@@ -74,6 +77,12 @@ class PaceAnalyzer(
             add(sessionEnd - bursts.last().last)
         }
         return gaps.max().coerceAtLeast(0)
+    }
+
+    private fun averageGap(bursts: List<LongRange>): Long {
+        if (bursts.size < 2) return 0
+        val gaps = (1 until bursts.size).map { bursts[it].first - bursts[it - 1].last }
+        return gaps.average().roundToLong().coerceAtLeast(0)
     }
 
     private fun verdict(bursts: List<LongRange>): PaceVerdict {
