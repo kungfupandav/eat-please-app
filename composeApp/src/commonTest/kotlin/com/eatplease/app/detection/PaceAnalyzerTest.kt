@@ -14,6 +14,7 @@ class PaceAnalyzerTest {
         assertEquals(PaceVerdict.INSUFFICIENT_DATA, stats.paceVerdict)
         assertEquals(0, stats.eatingSeconds)
         assertEquals(600, stats.longestPauseSeconds)
+        assertEquals(0, stats.averageGapSeconds)
     }
 
     @Test
@@ -26,6 +27,8 @@ class PaceAnalyzerTest {
         assertEquals(PaceVerdict.CONSTANT, stats.paceVerdict)
         assertEquals(40, stats.eatingSeconds)
         assertEquals(2.0, stats.bitesPerMinute, absoluteTolerance = 0.01)
+        // Every gap is next-burst start (30k) minus previous-burst end (30(k-1)+1).
+        assertEquals(29, stats.averageGapSeconds)
     }
 
     @Test
@@ -61,6 +64,21 @@ class PaceAnalyzerTest {
         val stats = analyzer.analyze(listOf(100L, 101, 200, 201), 0, 600)
 
         assertEquals(399, stats.longestPauseSeconds)
+    }
+
+    @Test
+    fun averageGapAveragesBurstBoundaries() {
+        // Bursts 10-11, 40-41, 100: gaps are 40-11=29 and 100-41=59 -> mean 44.
+        val stats = analyzer.analyze(listOf(10L, 11, 40, 41, 100), 0, 300)
+
+        assertEquals(44, stats.averageGapSeconds)
+    }
+
+    @Test
+    fun singleBurstHasZeroAverageGap() {
+        val stats = analyzer.analyze(listOf(10L, 11, 12), 0, 300)
+
+        assertEquals(0, stats.averageGapSeconds)
     }
 
     @Test

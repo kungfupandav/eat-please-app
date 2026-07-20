@@ -34,7 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.eatplease.app.detection.SessionStats
 import com.eatplease.app.detection.WatchState
+import com.eatplease.app.detection.roundedTo1
 import com.eatplease.app.di.AppGraph
 import com.eatplease.app.platform.currentEpochMillis
 import com.eatplease.app.settings.CameraFacing
@@ -96,7 +98,7 @@ fun HomeScreen(
             Text("Eat Please", style = MaterialTheme.typography.headlineMedium)
         }
 
-        StatusCard(watchState, now)
+        StatusCard(graph, watchState, now)
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Camera", style = MaterialTheme.typography.labelLarge)
@@ -117,9 +119,7 @@ fun HomeScreen(
         DetectionCameraFrame(
             active = watching != null,
             isEating = watching?.isEatingNow == true,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .align(Alignment.CenterHorizontally),
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         )
 
         Spacer(Modifier.weight(1f))
@@ -142,7 +142,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun StatusCard(watchState: WatchState, nowEpochMillis: Long) {
+private fun StatusCard(graph: AppGraph, watchState: WatchState, nowEpochMillis: Long) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -158,6 +158,18 @@ private fun StatusCard(watchState: WatchState, nowEpochMillis: Long) {
                 }
 
                 is WatchState.Watching -> {
+                    // Live pace stats: the events flow grows as detection records
+                    // seconds and `nowEpochMillis` ticks, so both update in place.
+                    val events by remember(watchState.sessionId) {
+                        graph.repository.eventsForSession(watchState.sessionId)
+                    }.collectAsState(initial = emptyList())
+                    val stats = remember(events, nowEpochMillis) {
+                        graph.paceAnalyzer.analyze(
+                            eatingSeconds = events.map { it.atEpochSecond },
+                            sessionStartEpochSecond = watchState.startedAtEpochMs / 1000,
+                            sessionEndEpochSecond = nowEpochMillis / 1000,
+                        )
+                    }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -177,6 +189,8 @@ private fun StatusCard(watchState: WatchState, nowEpochMillis: Long) {
                         eatingStatusLine(watchState, nowEpochMillis),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                    Text(paceLine(stats), style = MaterialTheme.typography.bodyMedium)
+                    Text(averageGapLine(stats), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -192,3 +206,12 @@ private fun eatingStatusLine(state: WatchState.Watching, nowEpochMillis: Long): 
         }
         else -> "no eating detected yet"
     }
+
+// "—" placeholders until there is real data, so we never show a misleading 0.
+private fun paceLine(stats: SessionStats): String =
+    if (stats.eatingSeconds == 0) "Eating Pace: —"
+    else "Eating Pace: ${stats.bitesPerMinute.roundedTo1()} bites/min"
+
+private fun averageGapLine(stats: SessionStats): String =
+    if (stats.averageGapSeconds <= 0) "Average Gap: —"
+    else "Average Gap: ${stats.averageGapSeconds}s"
