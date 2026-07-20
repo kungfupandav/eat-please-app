@@ -92,6 +92,7 @@ fun App(graph: AppGraph = Di.graph) {
                     }
                     entry<SettingsKey> {
                         SettingsScreen(
+                            graph = graph,
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }
