@@ -22,6 +22,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Eat Please uses the camera to detect eating actions during a watch session. Video is processed on this device and never stored or uploaded.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Eat Please uses the microphone so you can record a short audio reminder that plays when eating pace slows down. Audio stays on this device.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

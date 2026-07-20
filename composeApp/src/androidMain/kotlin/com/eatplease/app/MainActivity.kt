@@ -11,21 +11,33 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
+import com.eatplease.app.platform.AndroidPermissionRequester
 
 class MainActivity : ComponentActivity() {
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
 
+    private val micPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            AndroidPermissionRequester.onResult(granted)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        AndroidPermissionRequester.bind(this, micPermissionLauncher)
         requestWatchPermissions()
 
         setContent {
             App()
         }
+    }
+
+    override fun onDestroy() {
+        AndroidPermissionRequester.unbind(this)
+        super.onDestroy()
     }
 
     private fun requestWatchPermissions() {

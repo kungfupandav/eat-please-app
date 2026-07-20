@@ -8,6 +8,7 @@ import com.eatplease.app.detection.PaceAnalyzer
 import com.eatplease.app.detection.WatchController
 import com.eatplease.app.detection.WatchSessionManager
 import com.eatplease.app.detection.createPlatformWatchController
+import com.eatplease.app.settings.AudioPokeSettings
 import com.eatplease.app.settings.CameraSettings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
@@ -26,6 +27,7 @@ interface AppGraph {
     val repository: DetectionRepository
     val watchController: WatchController
     val cameraSettings: CameraSettings
+    val audioPokeSettings: AudioPokeSettings
     val paceAnalyzer: PaceAnalyzer
 
     @Provides
@@ -66,6 +68,10 @@ interface AppGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun provideCameraSettings(): CameraSettings = CameraSettings()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideAudioPokeSettings(): AudioPokeSettings = AudioPokeSettings()
 }
 
 /** Process-wide graph holder; created lazily on first UI use. */
