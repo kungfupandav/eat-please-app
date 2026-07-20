@@ -10,9 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen() {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Header(title = "Settings", onBack = onBack)
+        Header(title = "Settings")
         Text(
             "Settings coming soon.",
             style = MaterialTheme.typography.bodyMedium,
