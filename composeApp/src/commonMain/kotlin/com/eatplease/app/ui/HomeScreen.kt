@@ -229,7 +229,6 @@ private fun LandscapeHome(
                 CameraFacingToggle(
                     facing = facing,
                     onToggle = onToggleFacing,
-                    compact = true,
                 )
                 WatchButton(watching != null, onToggleWatch)
             }
@@ -508,40 +507,21 @@ private fun CameraSection(
 
 /**
  * Single neo toggle that flips the camera between front and back, replacing the
- * old pair of Front / Back buttons. Shows the active facing with a swap glyph.
+ * old pair of Front / Back buttons. Built on NeoButton so it matches the
+ * Start/Stop button's height when the two are stacked in landscape.
  */
 @Composable
 private fun CameraFacingToggle(
     facing: CameraFacing,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false,
 ) {
-    NeoBox(
-        modifier = modifier.fillMaxWidth(),
+    NeoButton(
+        text = if (facing == CameraFacing.FRONT) "Front  ⇄" else "Back  ⇄",
         backgroundColor = NeoColors.CyanBody,
-        cornerRadius = if (compact) 10.dp else 12.dp,
-        shadowOffset = 3.dp,
         onClick = onToggle,
-        contentPadding = PaddingValues(
-            vertical = if (compact) 5.dp else 7.dp,
-            horizontal = 10.dp,
-        ),
-    ) {
-        Text(
-            if (facing == CameraFacing.FRONT) "Front  ⇄" else "Back  ⇄",
-            style = if (compact) {
-                MaterialTheme.typography.labelMedium
-            } else {
-                MaterialTheme.typography.titleSmall
-            },
-            color = NeoColors.Ink,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
-        )
-    }
+        modifier = modifier,
+    )
 }
 
 private fun mmss(totalSeconds: Long): String {
