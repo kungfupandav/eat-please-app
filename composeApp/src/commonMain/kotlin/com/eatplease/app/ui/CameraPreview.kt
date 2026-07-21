@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -41,13 +42,14 @@ fun DetectionCameraFrame(
     active: Boolean,
     isEating: Boolean,
     modifier: Modifier = Modifier,
+    height: Dp = 150.dp,
 ) {
     val shape = RoundedCornerShape(16.dp)
     Box(
         modifier = modifier
             // Fixed height with width derived from 3:4 keeps constraints
             // satisfiable, so the frame never overflows into its neighbors.
-            .height(150.dp)
+            .height(height)
             .aspectRatio(3f / 4f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -145,6 +146,12 @@ fun NeoPill(
 /**
  * A color-block stat card: an uppercase header strip over a big value and a
  * small caption, matching the 2x2 grid on Home and the reference tiles.
+ *
+ * Value + caption are vertically centered in the body. Pass [expandBody] when
+ * the card has a bounded height from its parent (e.g. [fillMaxHeight] in a
+ * weighted landscape grid) so the body fills and centers; otherwise it wraps
+ * with even padding. [compact] tightens padding/type for short landscape cards.
+ * Avoid IntrinsicSize / BoxWithConstraints here — they crash under rotation.
  */
 @Composable
 fun NeoStatCard(
@@ -155,14 +162,24 @@ fun NeoStatCard(
     bodyColor: Color,
     modifier: Modifier = Modifier,
     headerTextColor: Color = NeoColors.Ink,
+    expandBody: Boolean = false,
+    compact: Boolean = false,
 ) {
+    val headerPad = if (compact) 3.dp else 5.dp
+    val bodyPadV = if (compact) 4.dp else 8.dp
+    val corner = if (compact) 10.dp else 14.dp
     NeoBox(
         modifier = modifier,
         backgroundColor = bodyColor,
-        cornerRadius = 14.dp,
+        cornerRadius = corner,
         shadowOffset = 3.dp,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (expandBody) Modifier.fillMaxHeight() else Modifier),
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -171,26 +188,54 @@ fun NeoStatCard(
             ) {
                 Text(
                     label.uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = if (compact) {
+                        MaterialTheme.typography.labelSmall
+                    } else {
+                        MaterialTheme.typography.labelMedium
+                    },
                     color = headerTextColor,
-                    modifier = Modifier.padding(vertical = 5.dp),
+                    modifier = Modifier.padding(vertical = headerPad),
                 )
             }
             // Divider echoes the hard border between header and body.
-            Box(Modifier.fillMaxWidth().height(3.dp).background(NeoColors.Ink))
-            Text(
-                value,
-                style = MaterialTheme.typography.headlineSmall,
-                color = NeoColors.Ink,
-                modifier = Modifier.padding(top = 8.dp),
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(if (compact) 2.dp else 3.dp)
+                    .background(NeoColors.Ink),
             )
-            Text(
-                caption,
-                style = MaterialTheme.typography.bodySmall,
-                color = NeoColors.Ink,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp, start = 4.dp, end = 4.dp),
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (expandBody) Modifier.weight(1f) else Modifier)
+                    .padding(vertical = bodyPadV, horizontal = 4.dp),
+            ) {
+                Text(
+                    value,
+                    style = if (compact) {
+                        MaterialTheme.typography.titleLarge
+                    } else {
+                        MaterialTheme.typography.headlineSmall
+                    },
+                    color = NeoColors.Ink,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                )
+                Text(
+                    caption,
+                    style = if (compact) {
+                        MaterialTheme.typography.labelSmall
+                    } else {
+                        MaterialTheme.typography.bodySmall
+                    },
+                    color = NeoColors.Ink,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = if (compact) 1.dp else 2.dp),
+                )
+            }
         }
     }
 }

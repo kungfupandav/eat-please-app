@@ -36,6 +36,10 @@ import com.eatplease.app.platform.currentEpochMillis
 import com.eatplease.app.ui.theme.NeoBox
 import com.eatplease.app.ui.theme.NeoColors
 import com.eatplease.app.ui.theme.NeoStatCard
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 // Body colors cycled across session rows for visual rhythm — purely decorative.
 private val sessionRowColors = listOf(NeoColors.LimeBody, NeoColors.CyanBody, NeoColors.OrangeBody)
@@ -43,6 +47,7 @@ private val sessionRowColors = listOf(NeoColors.LimeBody, NeoColors.CyanBody, Ne
 @Composable
 fun LogScreen(graph: AppGraph, onOpenSession: (Long) -> Unit) {
     val sessions by graph.repository.sessions.collectAsState(initial = emptyList())
+    val sections = remember(sessions) { sessionsByDate(sessions) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         // Top-level Log tab: big Fredoka title, no back arrow (bottom bar owns nav).
@@ -63,12 +68,25 @@ fun LogScreen(graph: AppGraph, onOpenSession: (Long) -> Unit) {
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                itemsIndexed(sessions, key = { _, it -> it.id }) { index, session ->
-                    SessionRow(
-                        session = session,
-                        bodyColor = sessionRowColors[index % sessionRowColors.size],
-                        onClick = { onOpenSession(session.id) },
-                    )
+                sections.forEach { section ->
+                    item(key = "date-${section.date}") {
+                        Text(
+                            section.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = NeoColors.Ink,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 2.dp),
+                        )
+                    }
+                    itemsIndexed(
+                        section.sessions,
+                        key = { _, session -> session.id },
+                    ) { index, session ->
+                        SessionRow(
+                            session = session,
+                            bodyColor = sessionRowColors[(section.startIndex + index) % sessionRowColors.size],
+                            onClick = { onOpenSession(session.id) },
+                        )
+                    }
                 }
             }
         }
@@ -157,25 +175,35 @@ private fun StatsCard(stats: SessionStats) {
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         // 2x2 grid of color-block stat cards.
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             NeoStatCard(
                 "Pace", paceValue, "bites / min",
-                NeoColors.OrangeHead, NeoColors.OrangeBody, modifier = Modifier.weight(1f),
+                NeoColors.OrangeHead, NeoColors.OrangeBody,
+                modifier = Modifier.weight(1f),
             )
             NeoStatCard(
                 "Avg gap", gapValue, "between bites",
                 NeoColors.MagentaHead, NeoColors.MagentaBody,
-                headerTextColor = NeoColors.Cream, modifier = Modifier.weight(1f),
+                headerTextColor = NeoColors.Cream,
+                modifier = Modifier.weight(1f),
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             NeoStatCard(
                 "Duration", formatDuration(stats.durationSeconds), "start to end",
-                NeoColors.CyanHead, NeoColors.CyanBody, modifier = Modifier.weight(1f),
+                NeoColors.CyanHead, NeoColors.CyanBody,
+                modifier = Modifier.weight(1f),
             )
             NeoStatCard(
                 "Eating", "${stats.eatingSeconds} s", "of active bites",
-                NeoColors.LimeHead, NeoColors.LimeBody, modifier = Modifier.weight(1f),
+                NeoColors.LimeHead, NeoColors.LimeBody,
+                modifier = Modifier.weight(1f),
             )
         }
 
@@ -225,3 +253,32 @@ private fun sessionTitle(session: WatchSession): String {
     val end = session.endedAtEpochMs?.let { " – ${formatTimeHm(it)}" } ?: ""
     return start + end
 }
+
+/** Groups newest-first sessions into date sections, preserving list order. */
+@OptIn(kotlin.time.ExperimentalTime::class)
+private fun sessionsByDate(
+    sessions: List<WatchSession>,
+    timeZone: TimeZone = TimeZone.currentSystemDefault(),
+): List<DateSection> {
+    if (sessions.isEmpty()) return emptyList()
+    val grouped = sessions.groupBy { session ->
+        Instant.fromEpochMilliseconds(session.startedAtEpochMs).toLocalDateTime(timeZone).date
+    }
+    var startIndex = 0
+    // groupBy keeps key order of first appearance; sessions are already newest-first.
+    return grouped.map { (date, daySessions) ->
+        DateSection(
+            date = date,
+            title = formatDayLabel(daySessions.first().startedAtEpochMs, timeZone),
+            sessions = daySessions,
+            startIndex = startIndex,
+        ).also { startIndex += daySessions.size }
+    }
+}
+
+private data class DateSection(
+    val date: LocalDate,
+    val title: String,
+    val sessions: List<WatchSession>,
+    val startIndex: Int,
+)
