@@ -142,13 +142,12 @@ private fun PortraitHome(
 }
 
 /**
- * Landscape splits the width into two equal halves with no scrolling:
+ * Landscape is a three-column split under a compact title + verdict strip
+ * (the strip keeps the eating verdict and the "Please eat!" poke flash visible):
  *
- * - Left half: the hero over the 2×2 stats (weighted so the cards keep enough
- *   height for header + value + caption). Stats therefore stay within 50% of
- *   the screen width.
- * - Right half: the live video sized as tall as it fits above a small facing
- *   toggle and the Start/Stop button.
+ * - Col 1 (1/3): the 2×2 stats grid.
+ * - Col 2 (1/3): the live video, sized as tall as it fits.
+ * - Col 3 (1/3): the facing toggle and the Start/Stop button.
  */
 @Composable
 private fun LandscapeHome(
@@ -168,6 +167,13 @@ private fun LandscapeHome(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         TitleRow(watching != null, compact = true)
+        VerdictHero(
+            watchState = watchState,
+            now = now,
+            compact = true,
+            poking = poking,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         Row(
             modifier = Modifier
@@ -175,69 +181,45 @@ private fun LandscapeHome(
                 .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // LEFT half — hero + stats, held to 50% of the width.
+            // Col 1 — stats (1/3 of the width).
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (watching != null) {
-                    VerdictHero(
-                        watchState = watchState,
-                        now = now,
-                        compact = true,
-                        fill = true,
-                        poking = poking,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(0.32f),
-                    )
                     StatGrid(
                         watching = watching,
                         stats = liveStats(graph, watching, now),
                         compact = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(0.68f),
-                    )
-                } else {
-                    VerdictHero(
-                        watchState = watchState,
-                        now = now,
-                        compact = true,
-                        fill = true,
-                        poking = poking,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
 
-            // RIGHT half — video as tall as it fits, then a small toggle + CTA.
+            // Col 2 — video, as tall as it can fit (height-driven 3:4, centered).
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center,
+            ) {
+                DetectionCameraFrame(
+                    active = watching != null,
+                    isEating = watching?.isEatingNow == true,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .aspectRatio(3f / 4f, matchHeightConstraintsFirst = true),
+                )
+            }
+
+            // Col 3 — facing toggle + Start/Stop.
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    // Height-driven here: fill the available height, width follows
-                    // the 3:4 ratio, so the frame is as tall as it can be.
-                    DetectionCameraFrame(
-                        active = watching != null,
-                        isEating = watching?.isEatingNow == true,
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .aspectRatio(3f / 4f, matchHeightConstraintsFirst = true),
-                    )
-                }
                 CameraFacingToggle(
                     facing = facing,
                     onToggle = onToggleFacing,
