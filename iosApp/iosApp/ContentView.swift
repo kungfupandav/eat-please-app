@@ -13,6 +13,9 @@ struct ComposeView: UIViewControllerRepresentable {
 struct ContentView: View {
     var body: some View {
         ComposeView()
-            .ignoresSafeArea(.keyboard) // Compose has its own keyboard handler
+            // Go edge-to-edge so the cream Compose background fills behind the
+            // status bar and home indicator; Compose applies safe-area insets to
+            // its own content (Scaffold safeDrawing) and handles the keyboard.
+            .ignoresSafeArea()
     }
 }
