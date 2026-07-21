@@ -14,10 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.eatplease.app.ui.theme.NeoBox
 
 /**
  * Live camera surface. Platform actuals attach to the active watch pipeline
@@ -40,15 +40,13 @@ fun DetectionCameraFrame(
     isEating: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(16.dp)
-    Box(
-        // Sizing (width/height/aspect ratio) is the caller's job so the same frame
-        // can be width-driven in portrait and height-driven in landscape.
-        modifier = modifier
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
-        contentAlignment = Alignment.Center,
+    // Built on NeoBox so the preview carries the same hard ink shadow + border as
+    // the rest of the home boxes. Sizing (width/height/aspect ratio) is the
+    // caller's job so the same frame works width-driven (portrait) or
+    // height-driven (landscape).
+    NeoBox(
+        modifier = modifier,
+        backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         if (active) {
             PlatformCameraPreview(modifier = Modifier.fillMaxSize())
@@ -59,7 +57,7 @@ fun DetectionCameraFrame(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.align(Alignment.Center).padding(12.dp),
             )
         }
     }

@@ -142,10 +142,10 @@ private fun PortraitHome(
 }
 
 /**
- * Landscape is a three-column split under a compact title + verdict strip
- * (the strip keeps the eating verdict and the "Please eat!" poke flash visible):
+ * Landscape is a three-column split under a compact title:
  *
- * - Col 1 (1/3): the 2×2 stats grid.
+ * - Col 1 (1/3): the verdict box (which also carries the "Please eat!" poke
+ *   flash) above the 2×2 stats grid.
  * - Col 2 (1/3): the live video, sized as tall as it fits.
  * - Col 3 (1/3): the facing toggle and the Start/Stop button.
  */
@@ -167,13 +167,6 @@ private fun LandscapeHome(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         TitleRow(watching != null, compact = true)
-        VerdictHero(
-            watchState = watchState,
-            now = now,
-            compact = true,
-            poking = poking,
-            modifier = Modifier.fillMaxWidth(),
-        )
 
         Row(
             modifier = Modifier
@@ -181,18 +174,31 @@ private fun LandscapeHome(
                 .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Col 1 — stats (1/3 of the width).
+            // Col 1 (1/3) — verdict box above the stats.
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                VerdictHero(
+                    watchState = watchState,
+                    now = now,
+                    compact = true,
+                    fill = true,
+                    poking = poking,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(if (watching != null) 0.35f else 1f),
+                )
                 if (watching != null) {
                     StatGrid(
                         watching = watching,
                         stats = liveStats(graph, watching, now),
                         compact = true,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(0.65f),
                     )
                 }
             }
