@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -221,7 +222,6 @@ private fun LandscapeHome(
                     isEating = watching?.isEatingNow == true,
                     facing = facing,
                     onToggleFacing = onToggleFacing,
-                    cameraHeight = 80.dp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -466,7 +466,11 @@ private fun ColumnScope.StatRow(
     )
 }
 
-/** Small kept camera thumbnail plus a Front/Back neo toggle. */
+/**
+ * Portrait camera row: the live preview takes half the width (3:4 portrait
+ * frame), with the CAMERA label and a single front/back toggle filling the
+ * other half.
+ */
 @Composable
 private fun CameraSection(
     active: Boolean,
@@ -474,41 +478,64 @@ private fun CameraSection(
     facing: CameraFacing,
     onToggleFacing: () -> Unit,
     modifier: Modifier = Modifier,
-    cameraHeight: Dp = 150.dp,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DetectionCameraFrame(active = active, isEating = isEating, height = cameraHeight)
+        // weight(1f) on both children splits the row 50/50, so the preview is
+        // half the screen width; aspectRatio derives its height from that width.
+        DetectionCameraFrame(
+            active = active,
+            isEating = isEating,
+            modifier = Modifier.weight(1f).aspectRatio(3f / 4f),
+        )
         Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
             modifier = Modifier.weight(1f),
         ) {
             Text("CAMERA", style = MaterialTheme.typography.labelMedium, color = NeoColors.Ink)
-            CameraFacing.entries.forEach { entry ->
-                val selected = facing == entry
-                NeoBox(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = if (selected) NeoColors.CyanBody else NeoColors.Cream,
-                    cornerRadius = 12.dp,
-                    shadowOffset = 3.dp,
-                    onClick = { if (!selected) onToggleFacing() },
-                    contentPadding = PaddingValues(vertical = 7.dp, horizontal = 10.dp),
-                ) {
-                    Text(
-                        if (entry == CameraFacing.FRONT) "Front" else "Back",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = NeoColors.Ink,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.Center),
-                    )
-                }
-            }
+            CameraFacingToggle(facing = facing, onToggle = onToggleFacing)
         }
+    }
+}
+
+/**
+ * Single neo toggle that flips the camera between front and back, replacing the
+ * old pair of Front / Back buttons. Shows the active facing with a swap glyph.
+ */
+@Composable
+private fun CameraFacingToggle(
+    facing: CameraFacing,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+) {
+    NeoBox(
+        modifier = modifier.fillMaxWidth(),
+        backgroundColor = NeoColors.CyanBody,
+        cornerRadius = if (compact) 10.dp else 12.dp,
+        shadowOffset = 3.dp,
+        onClick = onToggle,
+        contentPadding = PaddingValues(
+            vertical = if (compact) 5.dp else 7.dp,
+            horizontal = 10.dp,
+        ),
+    ) {
+        Text(
+            if (facing == CameraFacing.FRONT) "Front  ⇄" else "Back  ⇄",
+            style = if (compact) {
+                MaterialTheme.typography.labelMedium
+            } else {
+                MaterialTheme.typography.titleSmall
+            },
+            color = NeoColors.Ink,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center),
+        )
     }
 }
 
