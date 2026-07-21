@@ -23,6 +23,7 @@ fun clampMinPaceBitesPerMin(value: Int): Int =
  */
 class AudioPokeSettings(
     val recording: AudioPokeRecording = AudioPokeRecording(),
+    private val player: AudioPokePlayer = AudioPokePlayer(),
 ) {
     private val prefs = AudioPokePrefs()
 
@@ -34,6 +35,15 @@ class AudioPokeSettings(
     val minPaceBitesPerMin: StateFlow<Int> = _minPaceBitesPerMin.asStateFlow()
 
     val hasRecording: StateFlow<Boolean> = recording.hasRecording
+
+    /** True while the reminder clip is being played back. */
+    val isPlaying: StateFlow<Boolean> = player.isPlaying
+
+    // Last home poke, kept here (not in a composable's remember) so the per-minute
+    // cooldown survives navigating away from Home and back. Scoped to a session id
+    // so a genuinely new session still pokes on its own schedule.
+    private var lastPokeSessionId: Long? = null
+    private var lastPokedAtEpochMs: Long? = null
 
     fun setEnabled(value: Boolean) {
         _enabled.value = value
@@ -56,6 +66,27 @@ class AudioPokeSettings(
     }
 
     fun eraseRecording() {
+        player.stop()
         recording.eraseRecording()
+    }
+
+    /** Plays the saved reminder clip, if any. */
+    fun playRecording() {
+        player.play(recording.recordingPath())
+    }
+
+    /** Stops any in-progress reminder playback. */
+    fun stopPlayback() {
+        player.stop()
+    }
+
+    /** Last time a home poke played for [sessionId], or null if none for this session. */
+    fun lastPokedAt(sessionId: Long): Long? =
+        if (sessionId == lastPokeSessionId) lastPokedAtEpochMs else null
+
+    /** Records that a home poke played for [sessionId] at [nowEpochMs]. */
+    fun markPoked(sessionId: Long, nowEpochMs: Long) {
+        lastPokeSessionId = sessionId
+        lastPokedAtEpochMs = nowEpochMs
     }
 }

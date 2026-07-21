@@ -46,6 +46,7 @@ fun SettingsScreen(
     val minPace by audioPoke.minPaceBitesPerMin.collectAsState()
     val hasRecording by audioPoke.hasRecording.collectAsState()
     val isRecording by audioPoke.recording.isRecording.collectAsState()
+    val isPlaying by audioPoke.isPlaying.collectAsState()
     val scope = rememberCoroutineScope()
 
     Column(
@@ -137,6 +138,7 @@ fun SettingsScreen(
                 Text(
                     when {
                         isRecording -> "Recording… (up to 5 seconds)"
+                        isPlaying -> "Playing your reminder…"
                         hasRecording -> "Reminder saved on this device"
                         else -> "No reminder recorded yet"
                     },
@@ -156,13 +158,21 @@ fun SettingsScreen(
                         )
                     } else {
                         NeoButton(
-                            text = if (hasRecording) "Re-record" else "Record",
+                            text = "Record",
                             backgroundColor = NeoColors.Coral,
                             onClick = { scope.launch { audioPoke.startRecording() } },
                             modifier = Modifier.weight(1f),
                         )
                     }
                     if (hasRecording && !isRecording) {
+                        NeoButton(
+                            text = if (isPlaying) "Stop" else "Play",
+                            backgroundColor = NeoColors.Green,
+                            onClick = {
+                                if (isPlaying) audioPoke.stopPlayback() else audioPoke.playRecording()
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
                         NeoButton(
                             text = "Erase",
                             backgroundColor = NeoColors.Cream,
