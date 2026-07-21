@@ -28,11 +28,11 @@ import com.eatplease.app.di.AppGraph
 import com.eatplease.app.platform.currentEpochMillis
 
 @Composable
-fun LogScreen(graph: AppGraph, onBack: () -> Unit, onOpenSession: (Long) -> Unit) {
+fun LogScreen(graph: AppGraph, onOpenSession: (Long) -> Unit) {
     val sessions by graph.repository.sessions.collectAsState(initial = emptyList())
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Header(title = "Log", onBack = onBack)
+        Header(title = "Log")
 
         if (sessions.isEmpty()) {
             Text(
@@ -81,12 +81,14 @@ private fun computeStats(graph: AppGraph, session: WatchSession, events: List<Ea
     )
 
 @Composable
-internal fun Header(title: String, onBack: () -> Unit) {
+internal fun Header(title: String, onBack: (() -> Unit)? = null) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
     ) {
-        TextButton(onClick = onBack) { Text("←") }
+        if (onBack != null) {
+            TextButton(onClick = onBack) { Text("←") }
+        }
         Text(title, style = MaterialTheme.typography.headlineSmall)
     }
 }

@@ -78,7 +78,9 @@ jobs:
           npm install -g firebase-tools >/dev/null 2>&1
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
-          NOTES="$(git log -1 --pretty=%s) — ${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+          # Prefer the PR head branch when present; otherwise the push/dispatch ref.
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          NOTES="$(git log -1 --pretty=%s) — ${BRANCH}@${GITHUB_SHA::7}"
           qr() { python3 -c "import urllib.parse,sys; print('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
           {
             echo "## 🚀 Firebase App Distribution (Android)"
@@ -274,7 +276,9 @@ jobs:
           npm install -g firebase-tools >/dev/null 2>&1
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
-          NOTES="$(git log -1 --pretty=%s) — ${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+          # Prefer the PR head branch when present; otherwise the push/dispatch ref.
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          NOTES="$(git log -1 --pretty=%s) — ${BRANCH}@${GITHUB_SHA::7}"
           qr() { python3 -c "import urllib.parse,sys; print('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
           {
             echo "## Firebase App Distribution (iOS devices)"
