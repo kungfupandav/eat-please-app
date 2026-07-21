@@ -4,11 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -42,15 +39,12 @@ fun DetectionCameraFrame(
     active: Boolean,
     isEating: Boolean,
     modifier: Modifier = Modifier,
-    height: Dp = 150.dp,
 ) {
     val shape = RoundedCornerShape(16.dp)
     Box(
+        // Sizing (width/height/aspect ratio) is the caller's job so the same frame
+        // can be width-driven in portrait and height-driven in landscape.
         modifier = modifier
-            // Fixed height with width derived from 3:4 keeps constraints
-            // satisfiable, so the frame never overflows into its neighbors.
-            .height(height)
-            .aspectRatio(3f / 4f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
