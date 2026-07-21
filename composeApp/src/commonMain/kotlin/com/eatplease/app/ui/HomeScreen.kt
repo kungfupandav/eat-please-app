@@ -1,5 +1,10 @@
 package com.eatplease.app.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -25,6 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -33,6 +39,7 @@ import com.eatplease.app.detection.WatchState
 import com.eatplease.app.detection.roundedTo1
 import com.eatplease.app.di.AppGraph
 import com.eatplease.app.platform.currentEpochMillis
+import com.eatplease.app.settings.AudioPokeDecision
 import com.eatplease.app.settings.CameraFacing
 import com.eatplease.app.ui.theme.NeoBox
 import com.eatplease.app.ui.theme.NeoButton
@@ -46,6 +53,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(graph: AppGraph) {
     val watchState by graph.sessionManager.state.collectAsState()
     val facing by graph.cameraSettings.facing.collectAsState()
+    val isPlaying by graph.audioPokeSettings.isPlaying.collectAsState()
     val scope = rememberCoroutineScope()
     val watching = watchState as? WatchState.Watching
 
@@ -66,6 +74,10 @@ fun HomeScreen(graph: AppGraph) {
         Unit
     }
 
+    // Plays the reminder when the live pace drops below the minimum (rules in
+    // AudioPokeDecision). Kept outside the landscape/portrait split so it runs once.
+    AudioPokeEffect(graph, watching, now)
+
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val landscape = maxWidth > maxHeight
         if (landscape) {
@@ -75,6 +87,7 @@ fun HomeScreen(graph: AppGraph) {
                 watching = watching,
                 now = now,
                 facing = facing,
+                poking = isPlaying,
                 onToggleFacing = { graph.cameraSettings.toggle() },
                 onToggleWatch = onToggleWatch,
             )
@@ -85,6 +98,7 @@ fun HomeScreen(graph: AppGraph) {
                 watching = watching,
                 now = now,
                 facing = facing,
+                poking = isPlaying,
                 onToggleFacing = { graph.cameraSettings.toggle() },
                 onToggleWatch = onToggleWatch,
             )
@@ -99,6 +113,7 @@ private fun PortraitHome(
     watching: WatchState.Watching?,
     now: Long,
     facing: CameraFacing,
+    poking: Boolean,
     onToggleFacing: () -> Unit,
     onToggleWatch: () -> Unit,
 ) {
@@ -110,7 +125,7 @@ private fun PortraitHome(
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         TitleRow(watching != null)
-        VerdictHero(watchState, now)
+        VerdictHero(watchState, now, poking = poking)
         if (watching != null) {
             StatGrid(watching, liveStats(graph, watching, now))
         }
@@ -139,6 +154,7 @@ private fun LandscapeHome(
     watching: WatchState.Watching?,
     now: Long,
     facing: CameraFacing,
+    poking: Boolean,
     onToggleFacing: () -> Unit,
     onToggleWatch: () -> Unit,
 ) {
@@ -168,6 +184,7 @@ private fun LandscapeHome(
                         now = now,
                         compact = true,
                         fill = true,
+                        poking = poking,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(0.35f),
@@ -259,6 +276,43 @@ private fun liveStats(graph: AppGraph, watching: WatchState.Watching, now: Long)
     }
 }
 
+/**
+ * Watches live pace while a session is active and plays the audio reminder when
+ * the pace falls below the configured minimum. Renders nothing.
+ *
+ * Timing (see [AudioPokeDecision]): the first reminder waits a full minute of
+ * watching, the gap re-arms after every detected bite, and no more than one
+ * reminder plays per minute.
+ */
+@Composable
+private fun AudioPokeEffect(graph: AppGraph, watching: WatchState.Watching?, now: Long) {
+    if (watching == null) return
+    val audioPoke = graph.audioPokeSettings
+    val enabled by audioPoke.enabled.collectAsState()
+    val minPace by audioPoke.minPaceBitesPerMin.collectAsState()
+    val hasRecording by audioPoke.hasRecording.collectAsState()
+    val stats = liveStats(graph, watching, now)
+
+    LaunchedEffect(now) {
+        val shouldPlay = AudioPokeDecision.shouldPlay(
+            enabled = enabled,
+            hasRecording = hasRecording,
+            paceBitesPerMin = stats.bitesPerMinute,
+            minPaceBitesPerMin = minPace,
+            sessionStartEpochMs = watching.startedAtEpochMs,
+            lastBiteAtEpochMs = watching.lastEatingAtEpochMs,
+            // Held in AudioPokeSettings (not remember) so the cooldown persists
+            // when the user leaves Home and returns mid-session.
+            lastPlayedAtEpochMs = audioPoke.lastPokedAt(watching.sessionId),
+            nowEpochMs = now,
+        )
+        if (shouldPlay) {
+            audioPoke.markPoked(watching.sessionId, now)
+            audioPoke.playRecording()
+        }
+    }
+}
+
 /** Big color-block verdict — the emotional center of Home, mirroring the reference hero. */
 @Composable
 private fun VerdictHero(
@@ -267,6 +321,7 @@ private fun VerdictHero(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
     fill: Boolean = false,
+    poking: Boolean = false,
 ) {
     val (color, verdict, sub) = when (watchState) {
         is WatchState.Idle -> Triple(
@@ -282,10 +337,30 @@ private fun VerdictHero(
             else -> Triple(NeoColors.Yellow, "Watching", "Waiting for the first bite.")
         }
     }
+    // While the reminder plays, the hero takes over: swap in an urgent label and
+    // gently pulse the whole box so the nudge is felt as well as heard.
+    val nudging = poking && watchState is WatchState.Watching
+    val heroVerdict = if (nudging) "Please eat!" else verdict
+    // Brighter fill so the nudge pops off the calmer verdict hues.
+    val heroColor = if (nudging) NeoColors.Yellow else color
+    val flash = remember { Animatable(1f) }
+    LaunchedEffect(nudging) {
+        if (nudging) {
+            flash.animateTo(
+                targetValue = 0.55f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 380, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            )
+        } else {
+            flash.snapTo(1f)
+        }
+    }
     val verticalPad = if (compact) 4.dp else 28.dp
     NeoBox(
-        modifier = modifier.fillMaxWidth(),
-        backgroundColor = color,
+        modifier = modifier.fillMaxWidth().alpha(flash.value),
+        backgroundColor = heroColor,
         cornerRadius = if (compact) 10.dp else 20.dp,
         shadowOffset = if (compact) 3.dp else 4.dp,
         contentPadding = PaddingValues(vertical = verticalPad, horizontal = 10.dp),
@@ -302,7 +377,7 @@ private fun VerdictHero(
             ),
         ) {
             Text(
-                verdict,
+                heroVerdict,
                 style = when {
                     compact -> MaterialTheme.typography.titleLarge
                     else -> MaterialTheme.typography.displayMedium

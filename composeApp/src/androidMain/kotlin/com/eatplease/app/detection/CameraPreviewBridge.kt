@@ -16,4 +16,15 @@ object CameraPreviewBridge {
     fun setSurfaceProvider(provider: Preview.SurfaceProvider?) {
         _surfaceProvider.value = provider
     }
+
+    /**
+     * Detaches [provider] only if it is still the active one. On rotation the
+     * portrait/landscape layouts swap: the incoming preview can register its
+     * surface before the outgoing one is disposed, so an unconditional clear
+     * would blank the freshly-bound preview. Compare-and-set makes disposal
+     * order-independent — a stale view can never null out a newer surface.
+     */
+    fun clearSurfaceProvider(provider: Preview.SurfaceProvider) {
+        _surfaceProvider.compareAndSet(provider, null)
+    }
 }
