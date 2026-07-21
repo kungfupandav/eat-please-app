@@ -6,6 +6,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -141,12 +142,12 @@ private fun PortraitHome(
 }
 
 /**
- * Landscape keeps every portrait box on screen: title, hero, 2×2 stats,
- * camera + facing toggles, and Start/Stop — no scrolling.
+ * Landscape is a three-column split under a compact title:
  *
- * Left column while watching: weighted hero (~35%) + stats (~65%) so the
- * 2×2 cards always get enough height for header + value + caption. Right
- * column: camera + CTA.
+ * - Col 1 (1/3): the verdict box (which also carries the "Please eat!" poke
+ *   flash) above the 2×2 stats grid.
+ * - Col 2 (1/3): the live video, sized as tall as it fits.
+ * - Col 3 (1/3): the facing toggle and the Start/Stop button.
  */
 @Composable
 private fun LandscapeHome(
@@ -173,23 +174,24 @@ private fun LandscapeHome(
                 .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Col 1 (1/3) — verdict box above the stats.
             Column(
                 modifier = Modifier
-                    .weight(1.2f)
+                    .weight(1f)
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                VerdictHero(
+                    watchState = watchState,
+                    now = now,
+                    compact = true,
+                    fill = true,
+                    poking = poking,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(if (watching != null) 0.35f else 1f),
+                )
                 if (watching != null) {
-                    VerdictHero(
-                        watchState = watchState,
-                        now = now,
-                        compact = true,
-                        fill = true,
-                        poking = poking,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(0.35f),
-                    )
                     StatGrid(
                         watching = watching,
                         stats = liveStats(graph, watching, now),
@@ -198,33 +200,35 @@ private fun LandscapeHome(
                             .fillMaxWidth()
                             .weight(0.65f),
                     )
-                } else {
-                    VerdictHero(
-                        watchState = watchState,
-                        now = now,
-                        compact = true,
-                        fill = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                    )
                 }
             }
 
-            Column(
+            // Col 2 — video, as tall as it can fit (height-driven 3:4, centered).
+            Box(
                 modifier = Modifier
-                    .weight(0.9f)
+                    .weight(1f)
                     .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                CameraSection(
+                DetectionCameraFrame(
                     active = watching != null,
                     isEating = watching?.isEatingNow == true,
-                    facing = facing,
-                    onToggleFacing = onToggleFacing,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                        .fillMaxHeight()
+                        .aspectRatio(3f / 4f, matchHeightConstraintsFirst = true),
+                )
+            }
+
+            // Col 3 — facing toggle + Start/Stop.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+            ) {
+                CameraFacingToggle(
+                    facing = facing,
+                    onToggle = onToggleFacing,
                 )
                 WatchButton(watching != null, onToggleWatch)
             }
@@ -503,40 +507,21 @@ private fun CameraSection(
 
 /**
  * Single neo toggle that flips the camera between front and back, replacing the
- * old pair of Front / Back buttons. Shows the active facing with a swap glyph.
+ * old pair of Front / Back buttons. Built on NeoButton so it matches the
+ * Start/Stop button's height when the two are stacked in landscape.
  */
 @Composable
 private fun CameraFacingToggle(
     facing: CameraFacing,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false,
 ) {
-    NeoBox(
-        modifier = modifier.fillMaxWidth(),
+    NeoButton(
+        text = if (facing == CameraFacing.FRONT) "Front  ⇄" else "Back  ⇄",
         backgroundColor = NeoColors.CyanBody,
-        cornerRadius = if (compact) 10.dp else 12.dp,
-        shadowOffset = 3.dp,
         onClick = onToggle,
-        contentPadding = PaddingValues(
-            vertical = if (compact) 5.dp else 7.dp,
-            horizontal = 10.dp,
-        ),
-    ) {
-        Text(
-            if (facing == CameraFacing.FRONT) "Front  ⇄" else "Back  ⇄",
-            style = if (compact) {
-                MaterialTheme.typography.labelMedium
-            } else {
-                MaterialTheme.typography.titleSmall
-            },
-            color = NeoColors.Ink,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
-        )
-    }
+        modifier = modifier,
+    )
 }
 
 private fun mmss(totalSeconds: Long): String {
