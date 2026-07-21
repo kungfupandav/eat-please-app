@@ -133,7 +133,7 @@ fun App(graph: AppGraph = Di.graph) {
                             )
                         }
                         entry<SettingsKey> {
-                            SettingsScreen()
+                            SettingsScreen(graph = graph)
                         }
                         entry<SessionDetailKey> { key ->
                             SessionDetailScreen(
