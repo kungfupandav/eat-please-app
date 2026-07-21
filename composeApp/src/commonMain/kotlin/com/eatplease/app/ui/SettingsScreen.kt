@@ -28,7 +28,6 @@ import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
     graph: AppGraph = Di.graph,
 ) {
     val audioPoke = graph.audioPokeSettings
@@ -42,7 +41,7 @@ fun SettingsScreen(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Header(title = "Settings", onBack = onBack)
+        Header(title = "Settings")
 
         Row(
             modifier = Modifier.fillMaxWidth(),
