@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Eat Please — home landscape mock</title>
+<style>
+  :root {
+    --cream: #FBE7D6;
+    --cream-deep: #F5D9C4;
+    --ink: #0B0B0B;
+    --green: #88E88C;
+    --coral: #FF7059;
+    --yellow: #FFD60A;
+    --orange-h: #FF9E1B; --orange-b: #FFC163;
+    --mag-h: #FF17C4;   --mag-b: #F7ADE1;
+    --cyan-h: #34D6F0;  --cyan-b: #AEE6F5;
+    --lime-h: #59D96A;  --lime-b: #A7EBAE;
+    --page-bg: #EFE6DC;
+    --page-fg: #2b2622;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #211d1a; --page-fg: #d8cdc2; }
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .canvas {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--page-bg);
+    color: var(--page-fg);
+    min-height: 100vh;
+    padding: 36px 20px 56px;
+  }
+  .lead { max-width: 920px; margin: 0 auto 8px; }
+  .lead h1 {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-style: italic;
+    letter-spacing: -0.02em; font-size: 28px; margin: 0 0 6px;
+  }
+  .lead p { margin: 0; font-size: 15px; line-height: 1.55; opacity: 0.85; max-width: 68ch; }
+
+  .rack {
+    display: flex; flex-wrap: wrap; gap: 40px;
+    justify-content: center; align-items: flex-start;
+    margin-top: 32px;
+  }
+
+  /* ---- landscape phone (≈ iPhone 14 landscape content area) ---- */
+  .phone {
+    width: 720px; height: 340px;
+    flex: 0 0 auto;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 28px;
+    padding: 10px 12px 0;
+    box-shadow: 8px 10px 0 rgba(11,11,11,0.18);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .screen-name {
+    text-align: center; margin: 0 0 6px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--page-fg); opacity: 0.7;
+  }
+  .statusbar {
+    display: flex; justify-content: flex-end; align-items: center;
+    height: 14px; padding: 0 4px 0 0; flex: 0 0 auto;
+  }
+  .battery {
+    width: 28px; height: 12px; border: 2px solid var(--ink);
+    border-radius: 4px; position: relative;
+  }
+  .battery::after {
+    content: ""; position: absolute; right: -4px; top: 2px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 0 1px 1px 0;
+  }
+  .battery::before {
+    content: ""; position: absolute; inset: 1.5px; right: 7px;
+    background: var(--ink); border-radius: 1px;
+  }
+
+  /* Main content: never scrolls — all portrait boxes visible */
+  .home {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 10px 14px;
+    padding: 0 2px;
+    overflow: hidden;
+  }
+
+  .col {
+    min-height: 0;
+    display: flex; flex-direction: column;
+    gap: 8px;
+  }
+  .col.right { justify-content: space-between; }
+
+  .wordmark {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-style: italic; letter-spacing: -0.03em;
+    color: var(--ink); line-height: 1; font-size: 20px;
+    margin: 0; flex: 0 0 auto;
+  }
+  .wordmark .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .pill {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-style: normal;
+    font-size: 12px; letter-spacing: -0.01em;
+    border: 2.5px solid var(--ink); border-radius: 7px;
+    padding: 1px 7px; color: var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+    display: inline-block; background: var(--yellow);
+  }
+
+  .hero {
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    box-shadow: 3px 3px 0 var(--ink);
+    text-align: center;
+    padding: 10px 12px;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  .hero.good  { background: var(--green); }
+  .hero.poke  { background: var(--coral); }
+  .hero.ready { background: var(--cream-deep); }
+  .hero .verdict {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; letter-spacing: -0.03em; color: var(--ink);
+    line-height: 0.92; font-size: 36px; margin: 0;
+  }
+  .hero .sub {
+    font-weight: 800; font-size: 12px; color: var(--ink);
+    margin: 6px 0 0; opacity: 0.82;
+  }
+
+  /* Stats: 2×2 same as portrait, tightened */
+  .grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin: 0; flex: 1 1 auto; min-height: 0;
+  }
+  .stat {
+    border: 2.5px solid var(--ink); border-radius: 10px; overflow: hidden;
+    box-shadow: 2px 2px 0 var(--ink);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .stat .head {
+    font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+    text-align: center; padding: 3px 4px; border-bottom: 2.5px solid var(--ink); color: var(--ink);
+    flex: 0 0 auto;
+  }
+  .stat .val {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-size: 20px; letter-spacing: -0.02em;
+    text-align: center; padding: 4px 4px 0; color: var(--ink);
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+  }
+  .stat .foot {
+    text-align: center; font-size: 10px; font-weight: 800;
+    padding: 0 4px 5px; color: var(--ink); opacity: 0.78; flex: 0 0 auto;
+  }
+  .stat.orange .head { background: var(--orange-h); } .stat.orange .val, .stat.orange .foot { background: var(--orange-b); }
+  .stat.mag .head    { background: var(--mag-h); color:#fff; } .stat.mag .val, .stat.mag .foot { background: var(--mag-b); }
+  .stat.cyan .head   { background: var(--cyan-h); } .stat.cyan .val, .stat.cyan .foot { background: var(--cyan-b); }
+  .stat.lime .head   { background: var(--lime-h); } .stat.lime .val, .stat.lime .foot { background: var(--lime-b); }
+
+  /* Camera + facing toggles */
+  .camera-row {
+    display: flex; gap: 10px; align-items: stretch;
+    flex: 1 1 auto; min-height: 0;
+  }
+  .cam {
+    width: 96px; flex: 0 0 auto;
+    border: 2.5px solid var(--ink); border-radius: 12px;
+    background: #d4c4b4; box-shadow: 2px 2px 0 var(--ink);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cam .placeholder {
+    font-size: 10px; font-weight: 700; text-align: center;
+    color: var(--ink); opacity: 0.55; padding: 8px; line-height: 1.3;
+  }
+  .cam .detect {
+    position: absolute; inset: 14%;
+    border: 2.5px solid #2E7D32; border-radius: 6px;
+    background: rgba(46,125,50,0.12);
+  }
+  .facing {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; flex-direction: column; gap: 6px; justify-content: center;
+  }
+  .facing .lbl {
+    font-size: 10px; font-weight: 900; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink); margin: 0 0 2px;
+  }
+  .face-btn {
+    border: 2.5px solid var(--ink); border-radius: 10px;
+    box-shadow: 2px 2px 0 var(--ink); padding: 7px 8px;
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-size: 13px; text-align: center; color: var(--ink);
+    background: var(--cream);
+  }
+  .face-btn.on { background: var(--cyan-b); }
+
+  .cta {
+    text-align: center;
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; letter-spacing: 0.04em; font-size: 15px;
+    border: 3px solid var(--ink); border-radius: 12px;
+    padding: 10px; color: var(--ink); box-shadow: 3px 3px 0 var(--ink);
+    flex: 0 0 auto;
+  }
+  .cta.stop  { background: var(--coral); }
+  .cta.start { background: var(--green); }
+
+  /* Idle: no stats — left fills with hero stretch */
+  .home.idle .col.left { justify-content: flex-start; }
+  .home.idle .hero { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+  .home.idle .hero .verdict { font-size: 44px; }
+
+  .nav {
+    display: flex; justify-content: space-around; align-items: stretch;
+    border-top: 3px solid var(--ink);
+    margin: 8px -12px 0; padding: 5px 6px 8px;
+    flex: 0 0 auto;
+  }
+  .nav .item {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    font-size: 10px; font-weight: 900; color: var(--ink);
+    padding: 4px 16px; border-radius: 10px; border: 2.5px solid transparent;
+  }
+  .nav .item svg { width: 18px; height: 18px; }
+  .nav .item.active { background: var(--yellow); border-color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  .nav .item.dim { opacity: 0.85; }
+
+  .note {
+    max-width: 920px; margin: 28px auto 0;
+    font-size: 13px; line-height: 1.5; opacity: 0.75;
+  }
+  .note code {
+    font-size: 12px; background: rgba(11,11,11,0.08);
+    padding: 1px 5px; border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="lead">
+    <h1>Home · landscape (no scroll)</h1>
+    <p>
+      Same boxes as portrait home — title, verdict hero, 2×2 stats (when watching),
+      camera + Front/Back, Start/Stop, bottom nav — rearranged into a two-column
+      layout so everything fits in one landscape viewport with no scrolling.
+    </p>
+  </div>
+
+  <div class="rack">
+
+    <!-- ============ WATCHING / EATING ============ -->
+    <div class="phone">
+      <div class="screen-name">Landscape · watching · eating</div>
+      <div class="statusbar"><div class="battery"></div></div>
+      <div class="home">
+        <div class="col left">
+          <div class="wordmark">
+            <div class="row"><span>Eat Please</span><span class="pill">WATCHING</span></div>
+          </div>
+          <div class="hero good">
+            <p class="verdict">Eating</p>
+            <p class="sub">Nice steady pace — keep going.</p>
+          </div>
+          <div class="grid">
+            <div class="stat orange"><div class="head">Pace</div><div class="val">3.2</div><div class="foot">bites / min</div></div>
+            <div class="stat mag"><div class="head">Avg gap</div><div class="val">14s</div><div class="foot">between bites</div></div>
+            <div class="stat cyan"><div class="head">Elapsed</div><div class="val">12:30</div><div class="foot">since 1:04 PM</div></div>
+            <div class="stat lime"><div class="head">Eating</div><div class="val">8:40</div><div class="foot">this session</div></div>
+          </div>
+        </div>
+        <div class="col right">
+          <div class="camera-row">
+            <div class="cam">
+              <div class="detect"></div>
+            </div>
+            <div class="facing">
+              <p class="lbl">Camera</p>
+              <div class="face-btn on">Front</div>
+              <div class="face-btn">Back</div>
+            </div>
+          </div>
+          <div class="cta stop">STOP WATCHING</div>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watch</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Log</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Settings</div>
+      </div>
+    </div>
+
+    <!-- ============ WATCHING / PAUSED ============ -->
+    <div class="phone">
+      <div class="screen-name">Landscape · watching · paused</div>
+      <div class="statusbar"><div class="battery"></div></div>
+      <div class="home">
+        <div class="col left">
+          <div class="wordmark">
+            <div class="row"><span>Eat Please</span><span class="pill">WATCHING</span></div>
+          </div>
+          <div class="hero poke">
+            <p class="verdict">Paused</p>
+            <p class="sub">No bite for 48s.</p>
+          </div>
+          <div class="grid">
+            <div class="stat orange"><div class="head">Pace</div><div class="val">0.4</div><div class="foot">bites / min</div></div>
+            <div class="stat mag"><div class="head">Avg gap</div><div class="val">48s</div><div class="foot">between bites</div></div>
+            <div class="stat cyan"><div class="head">Elapsed</div><div class="val">18:02</div><div class="foot">since 1:04 PM</div></div>
+            <div class="stat lime"><div class="head">Eating</div><div class="val">9:15</div><div class="foot">this session</div></div>
+          </div>
+        </div>
+        <div class="col right">
+          <div class="camera-row">
+            <div class="cam">
+              <div class="detect" style="border-color:rgba(255,255,255,0.55);background:transparent;"></div>
+            </div>
+            <div class="facing">
+              <p class="lbl">Camera</p>
+              <div class="face-btn on">Front</div>
+              <div class="face-btn">Back</div>
+            </div>
+          </div>
+          <div class="cta stop">STOP WATCHING</div>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watch</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Log</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Settings</div>
+      </div>
+    </div>
+
+    <!-- ============ IDLE ============ -->
+    <div class="phone">
+      <div class="screen-name">Landscape · idle</div>
+      <div class="statusbar"><div class="battery"></div></div>
+      <div class="home idle">
+        <div class="col left">
+          <div class="wordmark">
+            <div class="row"><span>Eat Please</span></div>
+          </div>
+          <div class="hero ready">
+            <p class="verdict">Ready</p>
+            <p class="sub">Prop the phone at the table and press start.</p>
+          </div>
+        </div>
+        <div class="col right">
+          <div class="camera-row">
+            <div class="cam">
+              <div class="placeholder">Preview starts when you press start</div>
+            </div>
+            <div class="facing">
+              <p class="lbl">Camera</p>
+              <div class="face-btn on">Front</div>
+              <div class="face-btn">Back</div>
+            </div>
+          </div>
+          <div class="cta start">START WATCHING</div>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watch</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Log</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Settings</div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="note">
+    Layout idea for Compose: when <code>maxWidth &gt; maxHeight</code>, drop
+    <code>verticalScroll</code> and use a weighted <code>Row</code> —
+    left: title → hero → 2×2 stats; right: camera section → CTA — with tighter
+    padding so the fixed camera height no longer forces overflow.
+  </p>
+</div>
+</body>
+</html>
