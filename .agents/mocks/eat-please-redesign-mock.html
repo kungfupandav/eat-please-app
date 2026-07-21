@@ -1,0 +1,424 @@
+<title>Eat Please — restyle mock</title>
+<style>
+  :root {
+    --cream: #FBE7D6;
+    --cream-deep: #F5D9C4;
+    --ink: #0B0B0B;
+    --green: #88E88C;
+    --green-deep: #163A17;
+    --coral: #FF7059;
+    --coral-deep: #4A160C;
+    --yellow: #FFD60A;
+    --yellow-deep: #4A3B00;
+    --orange-h: #FF9E1B; --orange-b: #FFC163;
+    --mag-h: #FF17C4;   --mag-b: #F7ADE1;
+    --cyan-h: #34D6F0;  --cyan-b: #AEE6F5;
+    --lime-h: #59D96A;  --lime-b: #A7EBAE;
+    --blue-pill: #79C7F2;
+    --page-bg: #EFE6DC;
+    --page-fg: #2b2622;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #211d1a; --page-fg: #d8cdc2; }
+  }
+  :root[data-theme="dark"]  { --page-bg: #211d1a; --page-fg: #d8cdc2; }
+  :root[data-theme="light"] { --page-bg: #EFE6DC; --page-fg: #2b2622; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .canvas {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--page-bg);
+    color: var(--page-fg);
+    min-height: 100vh;
+    padding: 40px 20px 64px;
+  }
+  .lead { max-width: 760px; margin: 0 auto 8px; }
+  .lead h1 {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-style: italic;
+    letter-spacing: -0.02em; font-size: 30px; margin: 0 0 6px;
+  }
+  .lead p { margin: 0; font-size: 15px; line-height: 1.6; opacity: 0.85; max-width: 60ch; }
+
+  .rack {
+    display: flex; flex-wrap: wrap; gap: 34px;
+    justify-content: center; align-items: flex-start;
+    margin-top: 34px;
+  }
+
+  /* ---- phone ---- */
+  .phone {
+    width: 300px; flex: 0 0 auto;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 34px;
+    padding: 14px 14px 0;
+    box-shadow: 8px 10px 0 rgba(11,11,11,0.18);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .screen-name {
+    text-align: center; margin: 0 0 12px;
+    font-size: 13px; font-weight: 800; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--page-fg); opacity: 0.7;
+  }
+  .statusbar {
+    display: flex; justify-content: flex-end; align-items: center;
+    height: 22px; padding: 0 6px 0 0;
+  }
+  .battery {
+    width: 34px; height: 15px; border: 2.5px solid var(--ink);
+    border-radius: 5px; position: relative;
+  }
+  .battery::after {
+    content: ""; position: absolute; right: -5px; top: 3px;
+    width: 3px; height: 5px; background: var(--ink); border-radius: 0 2px 2px 0;
+  }
+  .battery::before {
+    content: ""; position: absolute; inset: 2px; right: 8px;
+    background: var(--ink); border-radius: 1px;
+  }
+
+  .wordmark {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-style: italic; letter-spacing: -0.03em;
+    color: var(--ink); line-height: 1.02; margin: 2px 4px 12px;
+  }
+  .wordmark.big { font-size: 30px; }
+  .wordmark .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .pill {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-style: normal;
+    font-size: 17px; letter-spacing: -0.01em;
+    border: 3px solid var(--ink); border-radius: 9px;
+    padding: 2px 9px; color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    display: inline-block;
+  }
+  .pill.now { background: var(--yellow); }
+  .pill.who { background: var(--blue-pill); }
+
+  /* ---- hero ---- */
+  .hero {
+    border: 3px solid var(--ink);
+    border-radius: 20px;
+    box-shadow: 4px 4px 0 var(--ink);
+    text-align: center;
+    padding: 26px 14px;
+    margin: 2px 4px 16px;
+  }
+  .hero.good  { background: var(--green); }
+  .hero.poke  { background: var(--coral); }
+  .hero .verdict {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; letter-spacing: -0.03em; color: var(--ink);
+    line-height: 0.92; font-size: 62px; margin: 0;
+  }
+  .hero .sub {
+    font-weight: 800; font-size: 14px; color: var(--ink);
+    margin: 12px 0 0; opacity: 0.82;
+  }
+
+  /* ---- stat grid ---- */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 4px 12px; }
+  .stat { border: 3px solid var(--ink); border-radius: 14px; overflow: hidden; box-shadow: 3px 3px 0 var(--ink); }
+  .stat .head {
+    font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+    text-align: center; padding: 5px 4px; border-bottom: 3px solid var(--ink); color: var(--ink);
+  }
+  .stat .val {
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; font-size: 26px; letter-spacing: -0.02em;
+    text-align: center; padding: 8px 4px 2px; color: var(--ink);
+  }
+  .stat .foot { text-align: center; font-size: 12px; font-weight: 800; padding: 0 4px 7px; color: var(--ink); opacity: 0.78; }
+  .stat.orange .head { background: var(--orange-h); } .stat.orange .val, .stat.orange .foot { background: var(--orange-b); }
+  .stat.mag .head    { background: var(--mag-h); color:#fff; } .stat.mag .val, .stat.mag .foot { background: var(--mag-b); }
+  .stat.cyan .head   { background: var(--cyan-h); } .stat.cyan .val, .stat.cyan .foot { background: var(--cyan-b); }
+  .stat.lime .head   { background: var(--lime-h); } .stat.lime .val, .stat.lime .foot { background: var(--lime-b); }
+
+  .updated { text-align: center; font-size: 12px; font-style: italic; font-weight: 700; opacity: 0.6; margin: 2px 0 14px; color: var(--ink); }
+
+  /* big action button */
+  .cta {
+    margin: 0 4px 16px; text-align: center;
+    font-family: "Arial Black", system-ui, sans-serif;
+    font-weight: 900; letter-spacing: 0.04em; font-size: 19px;
+    border: 3px solid var(--ink); border-radius: 16px;
+    padding: 15px; color: var(--ink); box-shadow: 4px 4px 0 var(--ink);
+  }
+  .cta.stop  { background: var(--coral); }
+  .cta.start { background: var(--green); }
+
+  /* ---- log list ---- */
+  .logrow {
+    border: 3px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 var(--ink);
+    margin: 0 4px 12px; overflow: hidden;
+  }
+  .logrow .top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-bottom: 3px solid var(--ink);
+  }
+  .logrow .top .when { font-weight: 900; font-size: 15px; color: var(--ink); }
+  .logrow .verdict-chip {
+    font-family:"Arial Black",sans-serif; font-weight:900; font-size:13px;
+    border:2.5px solid var(--ink); border-radius:7px; padding:1px 8px; background: var(--ink); color:#fff;
+  }
+  .logrow .body { display: flex; }
+  .logrow .body .cell { flex: 1; text-align: center; padding: 7px 4px; }
+  .logrow .body .cell + .cell { border-left: 3px solid var(--ink); }
+  .logrow .body .cell .n { font-family:"Arial Black",sans-serif; font-weight:900; font-size:18px; color:var(--ink); }
+  .logrow .body .cell .k { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; opacity:0.7; color:var(--ink); }
+  .logrow.a { background: var(--lime-b); } .logrow.a .top { background: var(--lime-h); }
+  .logrow.b { background: var(--cyan-b); } .logrow.b .top { background: var(--cyan-h); }
+  .logrow.c { background: var(--orange-b); } .logrow.c .top { background: var(--orange-h); }
+
+  /* ---- settings ---- */
+  .setcard { border:3px solid var(--ink); border-radius:16px; box-shadow:3px 3px 0 var(--ink); margin:0 4px 14px; overflow:hidden; }
+  .setcard .sh { font-size:12px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; padding:6px 12px; border-bottom:3px solid var(--ink); color:var(--ink); }
+  .setcard.mag .sh { background: var(--mag-h); color:#fff; } .setcard.mag { background: var(--mag-b); }
+  .setcard.cyan .sh { background: var(--cyan-h); } .setcard.cyan { background: var(--cyan-b); }
+  .setcard.orange .sh { background: var(--orange-h); } .setcard.orange { background: var(--orange-b); }
+  .setrow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px; }
+  .setrow .lbl b { font-size:15px; color:var(--ink); }
+  .setrow .lbl span { display:block; font-size:12px; font-weight:600; color:var(--ink); opacity:0.75; margin-top:2px; }
+  .toggle { width:52px; height:30px; border:3px solid var(--ink); border-radius:16px; background:var(--green); position:relative; flex:0 0 auto; }
+  .toggle::after { content:""; position:absolute; top:2px; right:3px; width:20px; height:20px; border-radius:50%; background:var(--ink); }
+  .slider { padding: 4px 12px 14px; }
+  .track { height:14px; border:3px solid var(--ink); border-radius:10px; background:#fff; position:relative; }
+  .track .fill { position:absolute; left:0; top:0; bottom:0; width:56%; background:var(--mag-h); border-right:3px solid var(--ink); border-radius:7px 0 0 7px; }
+  .track .knob { position:absolute; left:52%; top:50%; transform:translate(-50%,-50%); width:22px; height:22px; border:3px solid var(--ink); border-radius:50%; background:var(--yellow); }
+  .setbtns { display:flex; gap:10px; padding:4px 12px 14px; }
+  .setbtn { flex:1; text-align:center; font-family:"Arial Black",sans-serif; font-weight:900; font-size:14px; border:3px solid var(--ink); border-radius:12px; padding:9px; box-shadow:3px 3px 0 var(--ink); color:var(--ink); }
+  .setbtn.rec { background: var(--coral); } .setbtn.erase { background: var(--cream); }
+
+  .spacer { flex: 1 1 auto; min-height: 6px; }
+
+  /* ---- bottom nav ---- */
+  .nav {
+    display: flex; justify-content: space-around; align-items: stretch;
+    border-top: 3px solid var(--ink);
+    margin: 0 -14px; padding: 8px 6px 12px;
+  }
+  .nav .item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 12px; font-weight: 900; color: var(--ink);
+    padding: 7px 14px; border-radius: 14px; border: 3px solid transparent;
+  }
+  .nav .item svg { width: 22px; height: 22px; }
+  .nav .item.active { background: var(--yellow); border-color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  .nav .item.dim { opacity: 0.85; }
+
+  /* ---- press-down interaction ---- */
+  .pill, .hero, .stat, .cta, .logrow, .setbtn, .toggle,
+  .nav .item, .demo-btn {
+    cursor: pointer;
+    transition: transform 70ms ease, box-shadow 70ms ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  /* 3px-shadow boxes sink 3px into their shadow */
+  .pill:active, .stat:active, .logrow:active,
+  .setbtn:active, .nav .item.active:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 0 var(--ink);
+  }
+  /* 4px-shadow boxes sink 4px */
+  .hero:active, .cta:active, .demo-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 0 var(--ink);
+  }
+  /* shadowless controls just nudge for tactile feedback */
+  .toggle:active, .nav .item.dim:active { transform: translate(2px, 2px); }
+  .demo-btn:focus-visible, .cta:focus-visible { outline: 3px solid #185FA5; outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pill, .hero, .stat, .cta, .logrow, .setbtn, .toggle, .nav .item, .demo-btn { transition: none; }
+  }
+
+  /* demo row */
+  .demo { max-width: 760px; margin: 18px auto 0; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .demo-btn {
+    font-family: "Arial Black", system-ui, sans-serif; font-weight: 900; letter-spacing: 0.02em;
+    font-size: 20px; color: var(--ink); border: 3px solid var(--ink); border-radius: 16px;
+    padding: 16px 26px; box-shadow: 4px 4px 0 var(--ink); background: var(--green);
+  }
+  .demo-btn.b { background: var(--yellow); }
+  .demo-btn.c { background: var(--cyan-b); }
+  .demo-hint { font-size: 14px; font-weight: 700; opacity: 0.7; }
+</style>
+
+<div class="canvas">
+  <div class="lead">
+    <h1>Eat Please — bold restyle</h1>
+    <p>A mock of the app in the high-contrast, thick-border, saturated-block look from your reference. Press any box — it sinks down-right into its own shadow, then springs back. Every bordered element on the phones below reacts the same way.</p>
+  </div>
+
+  <div class="demo">
+    <div class="demo-btn" tabindex="0">Press me</div>
+    <div class="demo-btn b" tabindex="0">And me</div>
+    <div class="demo-btn c" tabindex="0">Me too</div>
+    <span class="demo-hint">↑ tap / click and hold to see the press-down</span>
+  </div>
+
+  <div class="rack">
+
+    <!-- ============ WATCH: EATING ============ -->
+    <div class="phone">
+      <div class="screen-name">Watch · eating</div>
+      <div class="statusbar"><div class="battery"></div></div>
+      <div class="wordmark big">
+        <div class="row"><span>Eat</span><span>Please</span><span class="pill now">WATCHING</span></div>
+      </div>
+      <div class="hero good">
+        <p class="verdict">Eating</p>
+        <p class="sub">Nice steady pace — keep going</p>
+      </div>
+      <div class="grid">
+        <div class="stat orange"><div class="head">Pace</div><div class="val">3.2</div><div class="foot">bites / min</div></div>
+        <div class="stat mag"><div class="head">Avg gap</div><div class="val">14s</div><div class="foot">between bites</div></div>
+        <div class="stat cyan"><div class="head">Elapsed</div><div class="val">12:30</div><div class="foot">since 1:04 PM</div></div>
+        <div class="stat lime"><div class="head">Bites</div><div class="val">42</div><div class="foot">this session</div></div>
+      </div>
+      <div class="updated">updated moments ago</div>
+      <div class="cta stop">STOP WATCHING</div>
+      <div class="spacer"></div>
+      <div class="nav">
+        <div class="item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watch</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Log</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Settings</div>
+      </div>
+    </div>
+
+    <!-- ============ WATCH: PAUSED / POKE ============ -->
+    <div class="phone">
+      <div class="screen-name">Watch · paused</div>
+      <div class="statusbar"><div class="battery"></div></div>
+      <div class="wordmark big">
+        <div class="row"><span>Eat</span><span>Please</span><span class="pill now">WATCHING</span></div>
+      </div>
+      <div class="hero poke">
+        <p class="verdict">Paused</p>
+        <p class="sub">No bite for 48s — reminder played</p>
+      </div>
+      <div class="grid">
+        <div class="stat orange"><div class="head">Pace</div><div class="val">0.4</div><div class="foot">bites / min</div></div>
+        <div class="stat mag"><div class="head">Avg gap</div><div class="val">48s</div><div class="foot">between bites</div></div>
+        <div class="stat cyan"><div class="head">Elapsed</div><div class="val">18:02</div><div class="foot">since 1:04 PM</div></div>
+        <div class="stat lime"><div class="head">Bites</div><div class="val">47</div><div class="foot">this session</div></div>
+      </div>
+      <div class="updated">updated moments ago</div>
+      <div class="cta stop">STOP WATCHING</div>
+      <div class="spacer"></div>
+      <div class="nav">
+        <div class="item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watch</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Log</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Settings</div>
+      </div>
+    </div>
+
+    <!-- ============ LOG ============ -->
+    <div class="phone">
+      <div class="screen-name">Log</div>
+      <div class="statusbar"><div class="battery"></div></div>
+      <div class="wordmark big" style="font-style:normal;font-size:34px;margin-bottom:16px;">Log</div>
+
+      <div class="logrow a">
+        <div class="top"><span class="when">Today · 1:04 PM</span><span class="verdict-chip">STEADY</span></div>
+        <div class="body">
+          <div class="cell"><div class="n">18:40</div><div class="k">length</div></div>
+          <div class="cell"><div class="n">3.1</div><div class="k">pace</div></div>
+          <div class="cell"><div class="n">58</div><div class="k">bites</div></div>
+        </div>
+      </div>
+      <div class="logrow b">
+        <div class="top"><span class="when">Today · 8:12 AM</span><span class="verdict-chip">STEADY</span></div>
+        <div class="body">
+          <div class="cell"><div class="n">11:05</div><div class="k">length</div></div>
+          <div class="cell"><div class="n">2.8</div><div class="k">pace</div></div>
+          <div class="cell"><div class="n">31</div><div class="k">bites</div></div>
+        </div>
+      </div>
+      <div class="logrow c">
+        <div class="top"><span class="when">Yesterday · 7:30 PM</span><span class="verdict-chip">RUSHED</span></div>
+        <div class="body">
+          <div class="cell"><div class="n">9:20</div><div class="k">length</div></div>
+          <div class="cell"><div class="n">6.4</div><div class="k">pace</div></div>
+          <div class="cell"><div class="n">60</div><div class="k">bites</div></div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+      <div class="nav">
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watch</div>
+        <div class="item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Log</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Settings</div>
+      </div>
+    </div>
+
+    <!-- ============ SETTINGS ============ -->
+    <div class="phone">
+      <div class="screen-name">Settings</div>
+      <div class="statusbar"><div class="battery"></div></div>
+      <div class="wordmark big" style="font-style:normal;font-size:34px;margin-bottom:16px;">Settings</div>
+
+      <div class="setcard mag">
+        <div class="sh">Audio poke</div>
+        <div class="setrow">
+          <div class="lbl"><b>Nudge me</b><span>Play my reminder when my pace drops below the minimum.</span></div>
+          <div class="toggle"></div>
+        </div>
+      </div>
+
+      <div class="setcard cyan">
+        <div class="sh">Minimum pace · 3 bites/min</div>
+        <div class="slider">
+          <div class="track"><div class="fill"></div><div class="knob"></div></div>
+        </div>
+      </div>
+
+      <div class="setcard orange">
+        <div class="sh">Reminder recording</div>
+        <div class="setrow"><div class="lbl"><b>Reminder saved on this device</b></div></div>
+        <div class="setbtns">
+          <div class="setbtn rec">RE-RECORD</div>
+          <div class="setbtn erase">ERASE</div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+      <div class="nav">
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watch</div>
+        <div class="item dim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Log</div>
+        <div class="item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Settings</div>
+      </div>
+    </div>
+
+  </div>
+</div>
