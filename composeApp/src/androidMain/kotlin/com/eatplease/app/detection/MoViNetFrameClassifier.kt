@@ -24,6 +24,13 @@ class MoViNetFrameClassifier(modelBytes: ByteArray) : FrameClassifier {
     private val inputTensors = mutableMapOf<String, Tensor>()
     private val outputTensors = mutableMapOf<String, Tensor>()
 
+    // Serializes interpreter use against [close]: on Stop the service closes the
+    // interpreter while a frame may still be mid-flight on a background thread.
+    // Holding [lock] across inference makes close wait for it, and [closed] makes
+    // any later frame a no-op instead of calling into a closed interpreter.
+    private val lock = Any()
+    private var closed = false
+
     init {
         val model = ByteBuffer.allocateDirect(modelBytes.size).order(ByteOrder.nativeOrder())
         model.put(modelBytes)
@@ -53,7 +60,11 @@ class MoViNetFrameClassifier(modelBytes: ByteArray) : FrameClassifier {
         }
     }
 
-    override suspend fun classify(rgbFrame: ByteArray): FloatArray {
+    override suspend fun classify(rgbFrame: ByteArray): FloatArray = synchronized(lock) {
+        // A frame that arrives after the interpreter is closed (during Stop) is
+        // dropped; the session is already ending, so the result is unused.
+        if (closed) return@synchronized FloatArray(FrameClassifier.NUM_CLASSES)
+
         fillImageInput(rgbFrame)
 
         val inputs = inputBuffers.mapValues { (_, buffer) -> buffer.rewind(); buffer as Any }
@@ -68,10 +79,11 @@ class MoViNetFrameClassifier(modelBytes: ByteArray) : FrameClassifier {
             stateInput.put(outBuffer)
         }
 
-        return softmax(readLogits())
+        softmax(readLogits())
     }
 
-    override fun reset() {
+    override fun reset() = synchronized(lock) {
+        if (closed) return
         for ((name, buffer) in inputBuffers) {
             if (name == imageInputName) continue
             buffer.rewind()
@@ -91,7 +103,9 @@ class MoViNetFrameClassifier(modelBytes: ByteArray) : FrameClassifier {
         }
     }
 
-    fun close() {
+    fun close() = synchronized(lock) {
+        if (closed) return
+        closed = true
         interpreter.close()
     }
 

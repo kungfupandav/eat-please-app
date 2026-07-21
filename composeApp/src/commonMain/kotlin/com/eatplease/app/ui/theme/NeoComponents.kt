@@ -61,7 +61,13 @@ fun NeoBox(
     )
 
     // Outer padding reserves room for the shadow so it never draws outside bounds.
-    Box(modifier = modifier.padding(end = shadowOffset, bottom = shadowOffset)) {
+    // propagateMinConstraints makes the face fill the width the caller stretched
+    // the box to (e.g. fillMaxWidth), so its face matches the shadow instead of
+    // shrinking to its content — while wrap-content boxes (pills) still wrap.
+    Box(
+        modifier = modifier.padding(end = shadowOffset, bottom = shadowOffset),
+        propagateMinConstraints = true,
+    ) {
         // Hard shadow, revealed at bottom-right while the face is at rest.
         Box(
             modifier = Modifier
