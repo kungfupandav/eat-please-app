@@ -6,6 +6,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -141,12 +142,13 @@ private fun PortraitHome(
 }
 
 /**
- * Landscape keeps every portrait box on screen: title, hero, 2×2 stats,
- * camera + facing toggles, and Start/Stop — no scrolling.
+ * Landscape splits the width into two equal halves with no scrolling:
  *
- * Left column while watching: weighted hero (~35%) + stats (~65%) so the
- * 2×2 cards always get enough height for header + value + caption. Right
- * column: camera + CTA.
+ * - Left half: the hero over the 2×2 stats (weighted so the cards keep enough
+ *   height for header + value + caption). Stats therefore stay within 50% of
+ *   the screen width.
+ * - Right half: the live video sized as tall as it fits above a small facing
+ *   toggle and the Start/Stop button.
  */
 @Composable
 private fun LandscapeHome(
@@ -173,9 +175,10 @@ private fun LandscapeHome(
                 .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // LEFT half — hero + stats, held to 50% of the width.
             Column(
                 modifier = Modifier
-                    .weight(1.2f)
+                    .weight(1f)
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
@@ -188,7 +191,7 @@ private fun LandscapeHome(
                         poking = poking,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(0.35f),
+                            .weight(0.32f),
                     )
                     StatGrid(
                         watching = watching,
@@ -196,7 +199,7 @@ private fun LandscapeHome(
                         compact = true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(0.65f),
+                            .weight(0.68f),
                     )
                 } else {
                     VerdictHero(
@@ -204,6 +207,7 @@ private fun LandscapeHome(
                         now = now,
                         compact = true,
                         fill = true,
+                        poking = poking,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
@@ -211,20 +215,33 @@ private fun LandscapeHome(
                 }
             }
 
+            // RIGHT half — video as tall as it fits, then a small toggle + CTA.
             Column(
                 modifier = Modifier
-                    .weight(0.9f)
+                    .weight(1f)
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                CameraSection(
-                    active = watching != null,
-                    isEating = watching?.isEatingNow == true,
-                    facing = facing,
-                    onToggleFacing = onToggleFacing,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Height-driven here: fill the available height, width follows
+                    // the 3:4 ratio, so the frame is as tall as it can be.
+                    DetectionCameraFrame(
+                        active = watching != null,
+                        isEating = watching?.isEatingNow == true,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .aspectRatio(3f / 4f, matchHeightConstraintsFirst = true),
+                    )
+                }
+                CameraFacingToggle(
+                    facing = facing,
+                    onToggle = onToggleFacing,
+                    compact = true,
                 )
                 WatchButton(watching != null, onToggleWatch)
             }
