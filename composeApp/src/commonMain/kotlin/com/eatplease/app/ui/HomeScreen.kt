@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -128,12 +129,11 @@ private fun PortraitHome(
     ) {
         TitleRow(watching != null)
         VerdictHero(watchState, now, poking = poking)
-        if (watching != null) {
-            StatGrid(watching, liveStats(graph, watching, now))
-        }
-        CameraSection(
+        CameraStatsSection(
             active = watching != null,
             isEating = watching?.isEatingNow == true,
+            watching = watching,
+            stats = watching?.let { liveStats(graph, it, now) },
             facing = facing,
             onToggleFacing = onToggleFacing,
         )
@@ -405,6 +405,55 @@ private fun VerdictHero(
     }
 }
 
+/** The four Home stats, in a fixed order shared by the 2×2 grid and the column. */
+private data class StatSpec(
+    val label: String,
+    val value: String,
+    val caption: String,
+    val headerColor: Color,
+    val bodyColor: Color,
+    val headerTextColor: Color = NeoColors.Ink,
+)
+
+private fun statSpecs(watching: WatchState.Watching, stats: SessionStats): List<StatSpec> {
+    val paceValue = if (stats.eatingSeconds == 0) "—" else stats.bitesPerMinute.roundedTo1().toString()
+    val gapValue = if (stats.averageGapSeconds <= 0) "—" else "${stats.averageGapSeconds}s"
+    return listOf(
+        StatSpec("Pace", paceValue, "bites / min", NeoColors.OrangeHead, NeoColors.OrangeBody),
+        StatSpec(
+            "Avg gap", gapValue, "between bites",
+            NeoColors.MagentaHead, NeoColors.MagentaBody, headerTextColor = NeoColors.Cream,
+        ),
+        StatSpec(
+            "Elapsed", mmss(stats.durationSeconds), "since ${formatTimeHm(watching.startedAtEpochMs)}",
+            NeoColors.CyanHead, NeoColors.CyanBody,
+        ),
+        StatSpec("Eating", mmss(stats.eatingSeconds.toLong()), "this session", NeoColors.LimeHead, NeoColors.LimeBody),
+    )
+}
+
+@Composable
+private fun SpecCard(
+    spec: StatSpec,
+    compact: Boolean,
+    expandBody: Boolean,
+    modifier: Modifier,
+    bodyVerticalPadding: Dp = if (compact) 4.dp else 8.dp,
+) {
+    NeoStatCard(
+        label = spec.label,
+        value = spec.value,
+        caption = spec.caption,
+        headerColor = spec.headerColor,
+        bodyColor = spec.bodyColor,
+        headerTextColor = spec.headerTextColor,
+        expandBody = expandBody,
+        compact = compact,
+        bodyVerticalPadding = bodyVerticalPadding,
+        modifier = modifier,
+    )
+}
+
 @Composable
 private fun StatGrid(
     watching: WatchState.Watching,
@@ -412,44 +461,51 @@ private fun StatGrid(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
 ) {
-    val paceValue = if (stats.eatingSeconds == 0) "—" else stats.bitesPerMinute.roundedTo1().toString()
-    val gapValue = if (stats.averageGapSeconds <= 0) "—" else "${stats.averageGapSeconds}s"
+    val specs = statSpecs(watching, stats)
     val gap = if (compact) 4.dp else 12.dp
+    // In a RowScope: split evenly, and fill the row height when compact so the
+    // landscape grid's cards stretch to their weighted rows.
+    fun RowScope.cardModifier() =
+        Modifier.weight(1f).then(if (compact) Modifier.fillMaxHeight() else Modifier)
     Column(
         verticalArrangement = Arrangement.spacedBy(gap),
         modifier = modifier.fillMaxWidth(),
     ) {
         StatRow(compact = compact, gap = gap) {
-            NeoStatCard(
-                "Pace", paceValue, "bites / min",
-                NeoColors.OrangeHead, NeoColors.OrangeBody,
-                expandBody = compact,
-                compact = compact,
-                modifier = Modifier.weight(1f).then(if (compact) Modifier.fillMaxHeight() else Modifier),
-            )
-            NeoStatCard(
-                "Avg gap", gapValue, "between bites",
-                NeoColors.MagentaHead, NeoColors.MagentaBody,
-                headerTextColor = NeoColors.Cream,
-                expandBody = compact,
-                compact = compact,
-                modifier = Modifier.weight(1f).then(if (compact) Modifier.fillMaxHeight() else Modifier),
-            )
+            SpecCard(specs[0], compact, expandBody = compact, modifier = cardModifier())
+            SpecCard(specs[1], compact, expandBody = compact, modifier = cardModifier())
         }
         StatRow(compact = compact, gap = gap) {
-            NeoStatCard(
-                "Elapsed", mmss(stats.durationSeconds), "since ${formatTimeHm(watching.startedAtEpochMs)}",
-                NeoColors.CyanHead, NeoColors.CyanBody,
-                expandBody = compact,
-                compact = compact,
-                modifier = Modifier.weight(1f).then(if (compact) Modifier.fillMaxHeight() else Modifier),
-            )
-            NeoStatCard(
-                "Eating", mmss(stats.eatingSeconds.toLong()), "this session",
-                NeoColors.LimeHead, NeoColors.LimeBody,
-                expandBody = compact,
-                compact = compact,
-                modifier = Modifier.weight(1f).then(if (compact) Modifier.fillMaxHeight() else Modifier),
+            SpecCard(specs[2], compact, expandBody = compact, modifier = cardModifier())
+            SpecCard(specs[3], compact, expandBody = compact, modifier = cardModifier())
+        }
+    }
+}
+
+/**
+ * Portrait col 2: stats stacked full width, each at its natural height so all of
+ * its text stays visible. Drops the "Eating" box (the last spec) — the three
+ * shown are Pace, Avg gap, and Elapsed.
+ */
+@Composable
+private fun StatColumn(
+    watching: WatchState.Watching,
+    stats: SessionStats,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier,
+    ) {
+        statSpecs(watching, stats).dropLast(1).forEach { spec ->
+            SpecCard(
+                spec = spec,
+                compact = false,
+                expandBody = false,
+                // Slightly tighter than the default 8.dp so the three boxes come
+                // closer to col 1's (preview + toggle) height.
+                bodyVerticalPadding = 5.dp,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -471,36 +527,60 @@ private fun ColumnScope.StatRow(
 }
 
 /**
- * Portrait camera row: the live preview takes half the width (3:4 portrait
- * frame), with the CAMERA label and a single front/back toggle filling the
- * other half.
+ * Portrait body: two columns under the verdict. Col 1 is the live preview (3:4)
+ * with the facing toggle beneath it; col 2 is a stack of stat boxes, shown only
+ * while watching. Idle there are no stats, so col 1 drops to half width and
+ * centers across the row instead of hugging the left edge.
+ *
+ * Col 2 sizes to its own content (each box tall enough to show all its text) —
+ * it is not matched to col 1's height.
  */
 @Composable
-private fun CameraSection(
+private fun CameraStatsSection(
     active: Boolean,
     isEating: Boolean,
+    watching: WatchState.Watching?,
+    stats: SessionStats?,
     facing: CameraFacing,
     onToggleFacing: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        // Idle: col 2 is gone, so center the lone col 1 across the row.
+        horizontalArrangement = if (watching != null) {
+            Arrangement.spacedBy(12.dp)
+        } else {
+            Arrangement.Center
+        },
     ) {
-        // weight(1f) on both children splits the row 50/50, so the preview is
-        // half the screen width; aspectRatio derives its height from that width.
-        DetectionCameraFrame(
-            active = active,
-            isEating = isEating,
-            modifier = Modifier.weight(1f).aspectRatio(3f / 4f),
-        )
+        // Col 1 — preview above the facing toggle, always half width so it
+        // doesn't jump size when a session starts.
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-            modifier = Modifier.weight(1f),
+            modifier = if (watching != null) Modifier.weight(1f) else Modifier.fillMaxWidth(0.5f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("CAMERA", style = MaterialTheme.typography.labelMedium, color = NeoColors.Ink)
-            CameraFacingToggle(facing = facing, onToggle = onToggleFacing)
+            // aspectRatio derives the preview height from its (half-screen) width.
+            DetectionCameraFrame(
+                active = active,
+                isEating = isEating,
+                modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f),
+            )
+            CameraFacingToggle(
+                facing = facing,
+                onToggle = onToggleFacing,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // Col 2 — stacked stats at their natural height, only while watching.
+        if (watching != null && stats != null) {
+            StatColumn(
+                watching = watching,
+                stats = stats,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
@@ -517,7 +597,7 @@ private fun CameraFacingToggle(
     modifier: Modifier = Modifier,
 ) {
     NeoButton(
-        text = if (facing == CameraFacing.FRONT) "Front  ⇄" else "Back  ⇄",
+        text = if (facing == CameraFacing.FRONT) "Front Camera  ⇄" else "Back Camera  ⇄",
         backgroundColor = NeoColors.CyanBody,
         onClick = onToggle,
         modifier = modifier,
