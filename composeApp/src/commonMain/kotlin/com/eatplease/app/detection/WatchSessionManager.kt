@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface WatchState {
@@ -39,21 +38,15 @@ class WatchSessionManager(
     val state: StateFlow<WatchState> = _state.asStateFlow()
 
     init {
-        // Reflect the persisted active session, so reopening the app during a
-        // watch restores the Watching state (and its Stop button).
+        // The watch is tied to this process's lifetime: the camera pipeline and
+        // foreground service die when the app is killed. A session still marked
+        // active when this (process-wide singleton) is first created therefore
+        // means the previous process was killed mid-watch, so close it out
+        // instead of resuming a zombie Watching state with a runaway timer.
+        // An in-process reopen reuses this singleton and its live [_state], so
+        // it doesn't hit this path and keeps showing Watching as expected.
         scope.launch {
-            repository.activeSession.collect { active ->
-                _state.update { current ->
-                    when {
-                        active == null -> WatchState.Idle
-                        current is WatchState.Watching && current.sessionId == active.id -> current
-                        else -> WatchState.Watching(
-                            sessionId = active.id,
-                            startedAtEpochMs = active.startedAtEpochMs,
-                        )
-                    }
-                }
-            }
+            repository.endDanglingSession()
         }
     }
 

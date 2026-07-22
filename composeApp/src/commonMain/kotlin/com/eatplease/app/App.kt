@@ -1,5 +1,7 @@
 package com.eatplease.app
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -82,6 +84,20 @@ private val navBackStackConfig = SavedStateConfiguration {
     }
 }
 
+/**
+ * Per-entry slide transition: new screen slides in from the right, the popped
+ * screen slides back out. Attached only to pushed detail screens; tab switches
+ * use the NavDisplay-level cross-fade instead.
+ */
+private val slideTransitions: Map<String, Any> =
+    NavDisplay.transitionSpec {
+        slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+    } + NavDisplay.popTransitionSpec {
+        slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+    } + NavDisplay.predictivePopTransitionSpec {
+        slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+    }
+
 private data class BottomNavItem(val key: AppNavKey, val label: String, val icon: ImageVector)
 
 private val bottomNavItems = listOf(
@@ -122,15 +138,11 @@ fun App(graph: AppGraph = Di.graph) {
                     backStack = backStack,
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     onBack = { backStack.removeLastOrNull() },
-                    transitionSpec = {
-                        slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
-                    },
-                    popTransitionSpec = {
-                        slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
-                    },
-                    predictivePopTransitionSpec = {
-                        slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
-                    },
+                    // Default: tabs cross-fade rather than slide. Only entries that
+                    // opt in (via slideTransitions metadata) slide horizontally.
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    popTransitionSpec = { fadeIn() togetherWith fadeOut() },
+                    predictivePopTransitionSpec = { fadeIn() togetherWith fadeOut() },
                     entryProvider = entryProvider {
                         entry<HomeKey> {
                             HomeScreen(graph = graph)
@@ -144,7 +156,8 @@ fun App(graph: AppGraph = Di.graph) {
                         entry<SettingsKey> {
                             SettingsScreen(graph = graph)
                         }
-                        entry<SessionDetailKey> { key ->
+                        // Log -> detail is a push, so it keeps the horizontal slide.
+                        entry<SessionDetailKey>(metadata = slideTransitions) { key ->
                             SessionDetailScreen(
                                 graph = graph,
                                 sessionId = key.sessionId,

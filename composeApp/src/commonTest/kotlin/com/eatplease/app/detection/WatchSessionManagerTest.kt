@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class WatchSessionManagerTest {
@@ -76,20 +77,20 @@ class WatchSessionManagerTest {
     }
 
     @Test
-    fun reopeningWithActiveSessionRestoresWatchingState() = runTest {
+    fun restartingWithADanglingSessionEndsItAndStaysIdle() = runTest {
         val dao = FakeWatchDao()
         val repository = DetectionRepository(dao) { 5_000L }
         val existing = repository.startOrResumeSession()
 
-        // Fresh manager, as after an app restart: it must pick up the active session.
+        // Fresh manager, as after the app was killed mid-watch: the previous
+        // process's session must be closed out, not resumed.
         val manager = WatchSessionManager(repository, backgroundScope, clock = { 6_000L })
         runCurrent()
 
-        val state = manager.state.value
-        assertIs<WatchState.Watching>(state)
-        assertEquals(existing.id, state.sessionId)
-
-        manager.stop()
         assertIs<WatchState.Idle>(manager.state.value)
+        val ended = repository.sessions.first().single()
+        assertEquals(existing.id, ended.id)
+        assertTrue(ended.endedAtEpochMs != null)
+        assertNull(repository.activeSession.first())
     }
 }
