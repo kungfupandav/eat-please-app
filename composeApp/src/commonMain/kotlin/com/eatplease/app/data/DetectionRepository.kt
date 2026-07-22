@@ -41,6 +41,22 @@ class DetectionRepository(
         return active.copy(endedAtEpochMs = endedAt)
     }
 
+    /**
+     * Closes any session left active by a killed process. A watch only runs
+     * while the app process is alive, so a session still active at startup is
+     * always a crash/kill remnant. Ends it at its last recorded eating second
+     * (or its start, if nothing was recorded) rather than "now", so a session
+     * killed long ago doesn't report a runaway duration. Returns it, or null.
+     */
+    suspend fun endDanglingSession(): WatchSession? {
+        val active = dao.activeSessionOnce() ?: return null
+        val lastEventSecond = dao.eventsForSessionOnce(active.id).lastOrNull()?.atEpochSecond
+        val endedAt = lastEventSecond?.let { it * 1000 }?.coerceAtLeast(active.startedAtEpochMs)
+            ?: active.startedAtEpochMs
+        dao.endSession(active.id, endedAt)
+        return active.copy(endedAtEpochMs = endedAt)
+    }
+
     /** Records one detected eating second; same-second re-detections overwrite. */
     suspend fun recordEatingSecond(sessionId: Long, atEpochSecond: Long, confidence: Float) {
         dao.insertEvent(EatingEvent(sessionId, atEpochSecond, confidence))

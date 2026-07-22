@@ -67,6 +67,41 @@ class DetectionRepositoryTest {
     }
 
     @Test
+    fun endDanglingSessionWithoutActiveSessionReturnsNull() = runTest {
+        assertNull(repository().endDanglingSession())
+    }
+
+    @Test
+    fun endDanglingSessionEndsAtLastRecordedSecond() = runTest {
+        var now = 10_000L
+        val repo = repository { now }
+        val session = repo.startOrResumeSession()
+        repo.recordEatingSecond(session.id, atEpochSecond = 42, confidence = 0.5f)
+        repo.recordEatingSecond(session.id, atEpochSecond = 57, confidence = 0.6f)
+
+        // Simulate a later restart: the end time reflects the last event, not "now".
+        now = 9_999_000L
+        val ended = repo.endDanglingSession()
+
+        assertNotNull(ended)
+        assertEquals(session.id, ended.id)
+        assertEquals(57_000L, ended.endedAtEpochMs)
+        assertNull(repo.activeSession.first())
+    }
+
+    @Test
+    fun endDanglingSessionWithNoEventsEndsAtStart() = runTest {
+        val repo = repository { 10_000L }
+        val session = repo.startOrResumeSession()
+
+        val ended = repo.endDanglingSession()
+
+        assertNotNull(ended)
+        assertEquals(session.startedAtEpochMs, ended.endedAtEpochMs)
+        assertNull(repo.activeSession.first())
+    }
+
+    @Test
     fun eatingSecondsAreRecordedPerSecond() = runTest {
         val repo = repository()
         val session = repo.startOrResumeSession()
