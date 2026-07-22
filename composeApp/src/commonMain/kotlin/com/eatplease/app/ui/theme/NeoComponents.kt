@@ -164,9 +164,9 @@ fun NeoStatCard(
     headerTextColor: Color = NeoColors.Ink,
     expandBody: Boolean = false,
     compact: Boolean = false,
+    bodyVerticalPadding: Dp = if (compact) 4.dp else 8.dp,
 ) {
     val headerPad = if (compact) 3.dp else 5.dp
-    val bodyPadV = if (compact) 4.dp else 8.dp
     val corner = if (compact) 10.dp else 14.dp
     NeoBox(
         modifier = modifier,
@@ -210,7 +210,7 @@ fun NeoStatCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(if (expandBody) Modifier.weight(1f) else Modifier)
-                    .padding(vertical = bodyPadV, horizontal = 4.dp),
+                    .padding(vertical = bodyVerticalPadding, horizontal = 4.dp),
             ) {
                 Text(
                     value,

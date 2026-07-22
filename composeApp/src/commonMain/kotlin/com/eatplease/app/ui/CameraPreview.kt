@@ -1,5 +1,6 @@
 package com.eatplease.app.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -7,17 +8,18 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import com.eatplease.app.generated.resources.Res
+import com.eatplease.app.generated.resources.preview_placeholder
 import com.eatplease.app.ui.theme.NeoBox
+import org.jetbrains.compose.resources.painterResource
 
 /**
  * Live camera surface. Platform actuals attach to the active watch pipeline
@@ -52,12 +54,15 @@ fun DetectionCameraFrame(
             PlatformCameraPreview(modifier = Modifier.fillMaxSize())
             DetectionRectangle(isEating = isEating)
         } else {
-            Text(
-                "Preview starts when you press start",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).padding(12.dp),
+            // Idle placeholder: a styled "front cam" illustration that already
+            // carries its own LIVE badge and "Preview starts when you press
+            // start" caption, cropped to fill the 3:4 frame. Swapped out for the
+            // live camera the moment a watch session starts.
+            Image(
+                painter = painterResource(Res.drawable.preview_placeholder),
+                contentDescription = "Preview starts when you press start",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
